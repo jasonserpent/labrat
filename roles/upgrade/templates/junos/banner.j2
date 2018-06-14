@@ -1,0 +1,11 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+system {
+    login {
+{% if banner is defined %}
+        message "{{ banner | replace('\\', '\\\\') | replace('\n', '\\n') | replace('\'', '\\\'') }}";
+{% endif %}
+{% if motd is defined %}
+        announcement "{{ motd | replace('\\', '\\\\') | replace('\n', '\\n') | replace('\'', '\\\'') }}";
+{% endif %}
+    }
+}

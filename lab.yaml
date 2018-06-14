@@ -1,0 +1,57 @@
+---
+
+- name: Configure Lab test devices with default configurations
+  hosts:
+    - test_switches
+    - test_routers
+    - test_firewalls
+  connection: local
+  gather_facts: no
+  vars:
+    main_conf_dir: "{{ playbook_dir }}/.config/compiled"
+    main_diff_dir: "{{ playbook_dir }}/.config/diff"
+
+  pre_tasks:
+    - name: Clear folders
+      file:
+        path: "{{ playbook_dir }}/.config"
+        state: absent
+      run_once: True
+      changed_when: False
+      check_mode: no
+      ignore_errors: yes
+    - name: Define working directories
+      set_fact:
+        conf_dir: "{{ main_conf_dir }}/{{ inventory_hostname }}"
+        diff_dir: "{{ main_diff_dir }}/{{ inventory_hostname }}"
+      changed_when: False
+      check_mode: no
+    - name: Recreate folders
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ conf_dir }}"
+        - "{{ diff_dir }}"
+      changed_when: False
+      check_mode: no
+    - name: Get facts
+      include_role:
+        name: facts
+      changed_when: False
+      check_mode: no
+      when: napalm_facts is not defined
+
+  tasks:
+    - name: Management
+      include_role:
+        name: management
+
+    - name: Raw commands
+      include_role:
+        name: raw
+      when: raw is defined
+
+    - name: Deploy
+      include_role:
+        name: deploy

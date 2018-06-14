@@ -1,0 +1,15 @@
+---
+
+- name: Check version
+  include_tasks: "{{ os }}/check_version.yaml"
+
+  #- name: Copy image
+  #  include_tasks: "{{ os }}/copy_image.yaml"
+
+- name: Install image
+  include_tasks: "{{ os }}/install_image.yaml"
+  when: perform_upgrade
+
+- name: Update banner
+  include_tasks: "{{ os }}/update_banner.yaml"
+  when: perform_upgrade and (banner is defined or motd is defined)

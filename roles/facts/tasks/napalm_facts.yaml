@@ -1,0 +1,6 @@
+---
+
+- name: Napalm - Get facts from device
+  napalm_get_facts:
+    provider: "{{ napalm_provider }}"
+

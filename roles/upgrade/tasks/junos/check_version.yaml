@@ -1,0 +1,27 @@
+---
+
+- name: Gather show version facts
+  include_role:
+    name: facts
+
+- name: Show current version
+  debug:
+    msg: "Current version is {{ napalm_os_version }}. Target version is {{ target_version }}."
+
+    #- name: Check management VRF
+    #  debug:
+    #    msg: "Upgrade is not supported when there is a management VRF."
+    #  when: management.vrf_lite is defined
+    #
+    #- name: Quit if management.vrf_lite is defined
+    #  meta: end_play
+    #  when: management.vrf_lite is defined
+
+- name: quit if check_mode
+  meta: end_play
+  when: ansible_check_mode
+
+- name: Checking if upgrade is necessary
+  set_fact:
+    perform_upgrade: "{{ target_version != napalm_os_version }}"
+

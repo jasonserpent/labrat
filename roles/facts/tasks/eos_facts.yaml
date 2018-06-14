@@ -1,0 +1,6 @@
+---
+
+- name: EOS Gather facts
+  eos_facts:
+    provider: "{{ eos_provider }}"
+

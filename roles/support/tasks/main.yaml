@@ -1,0 +1,4 @@
+---
+
+- name: Get support information
+  include_tasks: "{{ os }}/get_support_info.yaml"

@@ -1,0 +1,8 @@
+---
+- name: NAPALM
+  include_tasks: deploy_with_napalm.yaml
+  when: use_napalm
+
+- name: Vendor specific
+  include_tasks: deploy_without_napalm.yaml
+  when: not use_napalm

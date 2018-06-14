@@ -1,0 +1,160 @@
+{% set short_name = inventory_hostname_short %}
+{% if version is defined and version != '' %}
+version {{ version }}
+{% endif %}
+apply-groups mgmt;
+groups mgmt {
+    system {
+        host-name {{ short_name }};
+        domain-name {{ domain_name }};
+{% if management.gateway is defined %}
+        backup-router {{ management.gateway }} destination {{ management.subnet | default('0.0.0.0/0') }};
+{% endif %}
+        time-zone {{ timezone }};
+        root-authentication {
+            encrypted-password "{{ local_admin_password.junos }}";
+        }
+        domain-search {{ domain_name }};
+        name-server {
+{% for name_server in name_servers %}
+            {{ name_server }};
+{% endfor %}
+        }
+        authentication-order [ password radius ];
+        radius-server {
+{% for radius_server in radius_servers %}
+            {{ radius_server }} {
+                port 1812;
+                accounting-port 1813;
+                secret "{{ radius_key.junos }}";
+            }
+{% endfor %}
+        }
+        login {
+            idle-timeout 10;
+{% if banner is defined %}
+            message "{{ banner | replace('\\', '\\\\') | replace('\n', '\\n') | replace('\'', '\\\'') }}";
+{% endif %}
+{% if motd is defined %}
+            announcement "{{ motd | replace('\\', '\\\\') | replace('\n', '\\n') | replace('\'', '\\\'') }}";
+{% endif %}
+            user {{ local_admin_user }} {
+                uid 2000;
+                class super-user;
+                authentication {
+                    encrypted-password "{{ local_admin_password.junos }}";
+                }
+            }
+            user remote {
+                uid 2001;
+                class super-user;
+            }
+        }
+        services {
+            ssh {
+                root-login deny;
+            }
+            netconf {
+                ssh;
+            }
+        }
+        archival {
+            configuration {
+                transfer-on-commit;
+                archive-sites {
+                    ftp://viper.lon.eplus.lab:/Archive/{{ short_name }};
+                }
+            }
+        }
+        syslog {
+            user * {
+                any emergency;
+            }
+            file messages {
+                any notice;
+                authorization info;
+            }
+            file interactive-commands {
+                interactive-commands any;
+            }
+{% for syslog_server in syslog_servers %}
+            host {{ syslog_server }} {
+                any any;
+            }
+{% endfor %}
+        }
+        ntp {
+{% for ntp_server in ntp_servers -%}
+  {% if loop.index == 1 %}
+            server {{ ntp_server }} prefer;
+            boot-server {{ ntp_server }};
+  {% else %}
+            server {{ ntp_server }}
+  {% endif %}
+{% endfor %}
+        }
+    }
+    snmp {
+        location "{{ location }}";
+        contact "{{ snmp.contact }}";
+        interface "{{ management.interface }}";
+{% for c in snmp_ro_communities %}
+        community {{ c }} {
+            authorization read-only;
+        }
+{% endfor %}
+{% for snmp_notif_server in snmp.notification_servers %}
+        trap-group TRAPS {
+            targets {
+                {{ snmp_notif_server }};
+            }
+        }
+{% endfor %}
+    }
+    forwarding-options {
+        storm-control-profiles default {
+            all;
+        }
+    }
+{% if management.gateway is defined %}
+    routing-options {
+        static {
+            /* Management */
+            route {{ management.subnet | default('0.0.0.0/0') }} {
+                next-hop {{ management.gateway }};
+                no-readvertise;
+            }
+        }
+    }
+{% endif %}
+    protocols {
+        lldp {
+            interface all;
+            management-address {{ management.address | ipaddr('address') }};
+            port-id-subtype interface-name;
+        }
+    }
+    interfaces {
+        {{ management.interface }} {
+            description "Management";
+            unit 0 {
+                family inet {
+                    address {{ management.address }} {
+                        primary;
+                        preferred;
+                    }
+{% for secondary_address in management.secondary_addresses | default([]) %}
+                   address {{ secondary_address }};
+{% endfor %}
+                }
+            }
+        }
+    }
+}
+{% for static_route in static_routes | default([]) %}
+routing-options{
+    static {
+        route {{ static_route.subnet }} next-hop {{ static_route.gateway }};
+    }
+}
+{% endfor %}

@@ -1,0 +1,8 @@
+---
+
+- include_tasks: napalm_facts.yaml
+  when: use_napalm
+
+- include_tasks: other_facts.yaml
+  when: not use_napalm
+

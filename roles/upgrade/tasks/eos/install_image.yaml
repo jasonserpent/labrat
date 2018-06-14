@@ -1,0 +1,54 @@
+---
+
+- name: Install new SWI
+  eos_command:
+    provider: "{{ eos_provider }}"
+    commands:
+      - "routing-context vrf {{ management.vrf_lite | default('default') }}"
+      - "install source {{ swi_url }} now"
+  when: perform_upgrade
+
+  #- debug:
+  #    msg: "Will now reboot the switch. Ignore the error if any."
+
+- name: Reboot the switch
+  eos_command:
+    provider: "{{ eos_provider }}"
+    commands:
+      - 'reload in 1 force reason "Upgrade"'
+  when: perform_upgrade
+  ignore_errors: yes
+  no_log: True
+
+  #- debug:
+  #    msg: "Switch is now rebooting. Please wait..."
+
+- name: Wait for the switch to come back online
+  wait_for:
+    host: "{{ inventory_hostname }}"
+    delay: "{{ install_pause }}"
+    port: 443
+    timeout: "{{ reboot_timer }}"
+  when: perform_upgrade
+  ignore_errors: yes
+
+- pause:
+    seconds: "{{ install_pause }}"
+  when: perform_upgrade
+
+- name: Gather show version facts
+  eos_command:
+    provider: "{{ eos_provider }}"
+    commands:
+      - command: 'show version'
+        output: json
+  register: showvers_post
+  when: perform_upgrade
+
+- name: Check new EOS version
+  assert:
+    that:
+      - "'{{ target_version }}' in showvers_post['stdout'][0]['version']"
+    msg: "Upgrade failed. New version is {{ showvers_post['stdout'][0]['version'] }} instead of {{ target_version }}"
+  when: perform_upgrade
+

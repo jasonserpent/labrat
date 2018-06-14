@@ -1,0 +1,116 @@
+{% set mgmt_vrf = management.vrf_lite | default('default') %}
+!
+hostname {{ inventory_hostname }}
+!
+ip domain-list {{ domain_name }}
+ip domain lookup vrf {{ mgmt_vrf }} source-interface {{ management.interface }}
+{% for name_server in name_servers %}
+ip name-server vrf {{ mgmt_vrf }} {{ name_server }}
+{% endfor %}
+!
+{% if mgmt_vrf != 'default' %}
+vrf definition {{ mgmt_vrf }}
+   rd 65535:1
+!
+no ip routing vrf {{ mgmt_vrf }}
+!
+{% endif %}
+!
+{% for syslog_server in syslog_servers %}
+logging vrf {{ mgmt_vrf }} host {{ syslog_server }}
+{% endfor %}
+logging vrf {{ mgmt_vrf }} source-interface {{ management.interface }}
+logging format hostname fqdn
+logging on
+!
+ntp source vrf {{ mgmt_vrf }} {{ management.interface }}
+{% for ntp_server in ntp_servers -%}
+  {% if loop.index == 1 %}
+ntp server vrf {{ mgmt_vrf }} {{ ntp_server }} prefer
+  {% else %}
+ntp server vrf {{ mgmt_vrf }} {{ ntp_server }}
+  {% endif %}
+{% endfor %}
+!
+clock timezone {{ timezone }}
+!
+snmp-server vrf {{ mgmt_vrf }}
+snmp-server source-interface {{ management.interface }}
+snmp-server chassis-id {{ inventory_hostname }}
+snmp-server location {{ location }}
+snmp-server contact {{ snmp.contact }}
+{% if snmp_ro_communities is defined %}
+  {% for c in snmp_ro_communities %}
+snmp-server community {{ c }} ro
+  {% endfor %}
+  {% for snmp_notif_server in snmp.notification_servers %}
+snmp-server host {{ snmp_notif_server }} vrf {{ mgmt_vrf }} informs version 2c {{ snmp_ro_communities[0] }}
+  {% endfor %}
+{% endif %}
+!
+spanning-tree mode rapid-pvst
+{% if enable_secret is defined | default(False) %}
+!
+enable secret sha512 {{ enable_secret }}
+{% endif %}
+username {{ local_admin_user }} privilege 15 role network-admin secret sha512 {{ local_admin_password.eos }}
+{% if redundancy is defined | default(False) %}
+!
+redundancy
+   protocol {{ redundancy }}
+{% endif %}
+!
+{% if management.gateway is defined %}
+ip route vrf {{ mgmt_vrf }} {{ management.subnet | default('0.0.0.0/0') }} {{ management.gateway }}
+!
+{% endif %}
+!
+{% for static_route in static_routes | default([]) %}
+ip route vrf {{ static_route.vrf | default('default') }} {{ static_route.subnet }} {{ static_route.gateway }}
+{% endfor %}
+!
+interface {{ management.interface }}
+   description Management
+   vrf forwarding {{ mgmt_vrf }}
+   ip address {{ management.address }}
+{% for secondary_address in management.secondary_addresses | default([]) %}
+   ip address {{ secondary_address }} secondary
+{% endfor %}
+{% if management.additional_interfaces is defined %}
+{% for additional_interface in management.additional_interfaces %}
+!
+interface {{ additional_interface.name }}
+   description Management
+   vrf forwarding {{ mgmt_vrf }}
+   ip address {{ additional_interface.address }}
+{% endfor %}
+{% endif %}
+!
+lldp management-address {{ management.interface }}
+lldp management-address vrf {{ mgmt_vrf }}
+!
+management api http-commands
+   no protocol http
+      no shutdown
+   vrf {{ mgmt_vrf }}
+      no shutdown
+!
+management ssh
+   idle-timeout 60
+!
+management api gnmi
+   transport grpc def
+      vrf {{ mgmt_vrf }}
+!
+{% if banner is defined %}
+!
+banner login
+{{ banner }}
+EOF
+{% endif %}
+{% if motd is defined %}
+!
+banner motd
+{{ motd }}
+EOF
+{% endif %}

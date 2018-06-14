@@ -1,0 +1,5 @@
+---
+- name: EOS
+  include_tasks: deploy_with_eos.yaml
+  when: not use_napalm and os == "eos"
+
