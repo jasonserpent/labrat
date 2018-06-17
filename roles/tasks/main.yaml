@@ -1,8 +1,0 @@
----
-- name: Generate management configurations
-  template:
-    src: "management.j2"
-    dest: "{{ conf_dir}}/01_management.conf"
-  check_mode: "no"
-  changed_when: false
-

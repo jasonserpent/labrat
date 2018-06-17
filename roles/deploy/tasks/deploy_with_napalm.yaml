@@ -15,6 +15,7 @@
     get_diffs: true
     diff_file: "{{ diff_dir }}/config.diff"
     archive_file: "{{ conf_dir }}/backup.conf"
+    timeout: "{{ timeout }}"
     optional_args:
       ignore_warning: ['statement not found', 'statement has no contents; ignored']
   check_mode: yes
@@ -46,6 +47,7 @@
     commit_changes: true
     replace_config: false
     get_diffs: false
+    timeout: "{{ timeout }}"
     optional_args:
       ignore_warning: ['statement not found', 'statement has no contents; ignored']
   no_log: "{{nolog}}"

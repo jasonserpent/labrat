@@ -1,6 +1,0 @@
----
-
-- include_tasks: eos_facts.yaml
-  when: not use_napalm and os == "eos"
-
-

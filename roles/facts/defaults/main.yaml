@@ -1,7 +1,7 @@
 ---
 use_napalm: true
 eos_transport: api
-timeout: 60
+timeout: 180
 
 eos_provider:
   host: "{{ ansible_host }}"
@@ -12,6 +12,12 @@ eos_provider:
   use_ssl: "yes"
   validate_certs: "no"
   timeout: "{{ timeout | default(60) }}"
+
+junos_provider:
+  host: "{{ ansible_host }}"
+  #username: "{{ ansible_user }}"
+  #password: "{{ ansible_pass }}"
+  timeout: "{{ timeout }}"
 
 
 napalm_provider:

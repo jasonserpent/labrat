@@ -3,6 +3,9 @@
 - include_tasks: napalm_facts.yaml
   when: use_napalm
 
-- include_tasks: other_facts.yaml
-  when: not use_napalm
+- include_tasks: eos_facts.yaml
+  when: os == "eos"
+
+- include_tasks: junos_facts.yaml
+  when: os == "junos"
 
