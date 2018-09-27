@@ -10,6 +10,7 @@
     cleanfs: yes
     force_host: yes
     reboot_pause: 300
+  ignore_errors: yes
   when: perform_upgrade
 
 - name: Wait for the switch to come back online
