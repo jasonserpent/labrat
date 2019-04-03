@@ -1,0 +1,13 @@
+---
+
+- name: EOS - Install new configuration
+  eos_config:
+    provider: "{{ eos_provider }}"
+    src: "{{ conf_dir }}/assembled.conf"
+    match: none
+    backup: no
+    save_when: changed
+  diff: false
+  when: not ansible_check_mode and result.msg is defined
+  tags: always
+

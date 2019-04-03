@@ -1,0 +1,15 @@
+---
+
+ansible_network_os: eos
+napalm_transport: eapi
+
+management:
+  interface: Management1
+  vrf_lite: MANAGEMENT
+
+swi_url: http://public.igx-emea.lab/images/arista/EOS-4.20.5F.swi
+target_version: 4.20.5F
+
+#swi_url: http://public.igx-emea.lab/images/arista/EOS-4.19.5M.swi
+#target_version: 4.19.5M
+

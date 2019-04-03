@@ -1,16 +1,15 @@
-{% set short_name = inventory_hostname_short %}
 {% if version is defined and version != '' %}
 version {{ version }}
 {% endif %}
 apply-groups mgmt;
 groups {
     replace:
-        mgmt {
+    mgmt {
         system {
-            host-name {{ short_name }};
+            host-name {{ inventory_hostname_short }};
             domain-name {{ domain_name }};
-{% if management.gateway is defined %}
-            backup-router {{ management.gateway }} destination {{ management.subnet | default('0.0.0.0/0') }};
+{% if management_gateway is defined %}
+            backup-router {{ management_gateway }} destination {{ management_subnet | default('0.0.0.0/0') }};
 {% endif %}
             time-zone {{ timezone }};
             root-authentication {
@@ -66,7 +65,7 @@ groups {
                 configuration {
                     transfer-on-commit;
                     archive-sites {
-                        ftp://viper.lon.eplus.lab:/Archive/{{ short_name }};
+                        ftp://viper.lon.eplus.lab:/Archive/{{ inventory_hostname_short }};
                     }
                 }
             }
@@ -102,11 +101,13 @@ groups {
             location "{{ location }}";
             contact "{{ snmp.contact }}";
             interface "{{ management.interface }}";
-{% for c in snmp_ro_communities %}
+{% if snmp.ro_communities is defined %}
+  {% for c in snmp.ro_communities %}
             community {{ c }} {
                 authorization read-only;
             }
-{% endfor %}
+  {% endfor %}
+{% endif %}
 {% for snmp_notif_server in snmp.notification_servers %}
             trap-group TRAPS {
                 targets {
@@ -115,12 +116,12 @@ groups {
             }
 {% endfor %}
         }
-{% if management.gateway is defined %}
+{% if management_gateway is defined %}
         routing-options {
             static {
                 /* Management */
-                route {{ management.subnet | default('0.0.0.0/0') }} {
-                    next-hop {{ management.gateway }};
+                route {{ management_subnet | default('0.0.0.0/0') }} {
+                    next-hop {{ management_gateway }};
                     no-readvertise;
                 }
             }
@@ -129,18 +130,22 @@ groups {
         protocols {
             lldp {
                 interface all;
-                management-address {{ management.address | ipaddr('address') }};
-{% if version | regex_replace('^(\d+)\..$', '\\1') | int >= 14 %}
+                management-address {{ management_address | ipaddr('address') }};
+{% if version | regex_replace('^(\d+)\..+$', '\\1') | int >= 13 %}
                 port-id-subtype interface-name;
+                port-description-type interface-alias;
+  {% if version | regex_replace('^(\d+)\..+$', '\\1') | int >= 17 %}
+                neighbour-port-info-display port-id;
+  {% endif %}
 {% endif %}
             }
         }
         interfaces {
-            {{ management.interface }} {
+            {{ management.interface | regex_replace('^([^\.]+)(\.(.*))?$', '\\1') }} {
                 description "Management";
-                unit 0 {
+                unit {{ management.interface | regex_replace('^[^\.]+\.(.*)$', '\\1') | default('0') | int }} {
                     family inet {
-                        address {{ management.address }} {
+                        address {{ management_address }} {
                             primary;
                             preferred;
                         }
@@ -154,7 +159,7 @@ groups {
     }
 }
 {% for static_route in static_routes | default([]) %}
-routing-options{
+routing-options {
     static {
         route {{ static_route.subnet }} next-hop {{ static_route.gateway }};
     }

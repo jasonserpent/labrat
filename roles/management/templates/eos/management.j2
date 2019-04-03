@@ -23,8 +23,15 @@ logging vrf {{ mgmt_vrf }} source-interface {{ management.interface }}
 logging format hostname fqdn
 logging on
 !
+no radius-server host
+{% for radius_server in radius_servers %}
+radius-server host {{ radius_server }} vrf {{ mgmt_vrf }} key 7 {{ radius_key.eos }}
+{% endfor %}
+!
+no ntp
+no ntp source
 ntp source vrf {{ mgmt_vrf }} {{ management.interface }}
-{% for ntp_server in ntp_servers -%}
+{% for ntp_server in ntp_servers %}
   {% if loop.index == 1 %}
 ntp server vrf {{ mgmt_vrf }} {{ ntp_server }} prefer
   {% else %}
@@ -34,17 +41,19 @@ ntp server vrf {{ mgmt_vrf }} {{ ntp_server }}
 !
 clock timezone {{ timezone }}
 !
+no snmp-server
+no snmp-server source-interface
 snmp-server vrf {{ mgmt_vrf }}
 snmp-server source-interface {{ management.interface }}
 snmp-server chassis-id {{ inventory_hostname }}
 snmp-server location {{ location }}
 snmp-server contact {{ snmp.contact }}
-{% if snmp_ro_communities is defined %}
-  {% for c in snmp_ro_communities %}
+{% if snmp.ro_communities is defined %}
+  {% for c in snmp.ro_communities %}
 snmp-server community {{ c }} ro
   {% endfor %}
   {% for snmp_notif_server in snmp.notification_servers %}
-snmp-server host {{ snmp_notif_server }} vrf {{ mgmt_vrf }} informs version 2c {{ snmp_ro_communities[0] }}
+snmp-server host {{ snmp_notif_server }} vrf {{ mgmt_vrf }} informs version 2c {{ snmp.ro_communities[0] }}
   {% endfor %}
 {% endif %}
 !
@@ -60,8 +69,8 @@ redundancy
    protocol {{ redundancy }}
 {% endif %}
 !
-{% if management.gateway is defined %}
-ip route vrf {{ mgmt_vrf }} {{ management.subnet | default('0.0.0.0/0') }} {{ management.gateway }}
+{% if management_gateway is defined %}
+ip route vrf {{ mgmt_vrf }} {{ management_subnet | default('0.0.0.0/0') }} {{ management_gateway }}
 !
 {% endif %}
 !
@@ -72,7 +81,7 @@ ip route vrf {{ static_route.vrf | default('default') }} {{ static_route.subnet 
 interface {{ management.interface }}
    description Management
    vrf forwarding {{ mgmt_vrf }}
-   ip address {{ management.address }}
+   ip address {{ management_address }}
 {% for secondary_address in management.secondary_addresses | default([]) %}
    ip address {{ secondary_address }} secondary
 {% endfor %}
@@ -110,6 +119,7 @@ EOF
 {% endif %}
 {% if motd is defined %}
 !
+no banner motd
 banner motd
 {{ motd }}
 EOF

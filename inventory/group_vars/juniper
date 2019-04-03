@@ -1,0 +1,13 @@
+---
+
+ansible_network_os: junos
+napalm_transport: eapi
+#mlag_mode: active-standby
+
+#swi_url: http://public.igx-emea.lab/images/junos/qfx/jinstall-host-qfx-5-flex-16.1R5.7-signed.tgz
+#target_version: 16.1R5.7
+
+
+#swi_url: http://public.igx-emea.lab/images/junos/qfx/jinstall-host-qfx-5-flex-16.1R6.7-signed.tgz
+swi_url: http://public.igx-emea.lab/images/junos/qfx/jinstall-host-qfx-5-16.1R6.7-signed.tgz
+target_version: 16.1R6.7

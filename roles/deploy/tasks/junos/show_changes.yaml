@@ -1,0 +1,60 @@
+---
+
+- name: Junos - Retrieve running configuration 
+  juniper_junos_config:
+    commit: false
+    retrieve: committed
+    return_output: false
+    diff: false
+    check: false
+    dest: "{{ conf_dir }}/candidate.conf"
+    provider: "{{ junos_provider }}"
+  check_mode: false
+  tags: always
+
+- name: Junos - Retrieve candidate configuration 
+  juniper_junos_config:
+    check: true
+    commit: false
+    format: text
+    load: replace
+    retrieve: candidate
+    return_output: true
+    src: "{{ conf_dir }}/assembled.conf"
+    provider: "{{ junos_provider }}"
+  check_mode: true
+  diff: true
+  register: result
+  changed_when: false
+  tags: always
+
+- name: Junos - Show changes
+  copy:
+    content: "{{ result.config }}"
+    dest: "{{ conf_dir }}/candidate.conf"
+  check_mode: no
+  diff: yes
+  changed_when: result.diff is defined
+  tags: always
+
+- name: Pause
+  pause:
+    prompt: Last chance to cancel changes
+    seconds: 60
+  when: not ansible_check_mode and result.diff is defined
+  tags: always
+
+- name: Junos - Install new configuration 
+  juniper_junos_config:
+    check: true
+    commit: true
+    format: text
+    load: replace
+    retrieve: candidate
+    return_output: true
+    src: "{{ conf_dir }}/assembled.conf"
+    provider: "{{ junos_provider }}"
+  diff: false
+  when: not ansible_check_mode and result.diff is defined
+  tags: always
+

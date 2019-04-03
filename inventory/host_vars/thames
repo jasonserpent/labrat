@@ -1,0 +1,3 @@
+---
+management:
+  interface: vlan.2

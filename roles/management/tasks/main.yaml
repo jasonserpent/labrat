@@ -3,6 +3,7 @@
   template:
     src: "management.j2"
     dest: "{{ conf_dir}}/01_management.conf"
-  check_mode: "no"
+  check_mode: false
   changed_when: false
+  tags: always
 

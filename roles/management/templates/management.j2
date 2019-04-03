@@ -1,2 +1,3 @@
 #jinja2: lstrip_blocks: "True", trim_blocks: "True"
-{% include os~'/management.j2' %}
+{% set management_gateway = management_address | ipaddr('-2') | ipaddr('address') %}
+{% include ansible_network_os~'/management.j2' %}

@@ -1,11 +1,15 @@
 ---
+- name: Gather NAPALM facts
+  napalm_get_facts:
+    provider: "{{ napalm_provider }}"
+    filter:
+      - facts
+      - interfaces
+      - environment
+      - interfaces_ip
+  tags: always
 
-- include_tasks: napalm_facts.yaml
-  when: use_napalm
-
-- include_tasks: eos_facts.yaml
-  when: os == "eos"
-
-- include_tasks: junos_facts.yaml
-  when: os == "junos"
+- name: Gather facts
+  include_tasks: "{{ ansible_network_os }}/facts.yaml"
+  tags: always
 

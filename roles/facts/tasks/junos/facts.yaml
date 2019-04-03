@@ -1,0 +1,5 @@
+- name: Gather Junos facts
+  juniper_junos_facts:
+    provider: "{{ junos_provider }}"
+  tags: always
+

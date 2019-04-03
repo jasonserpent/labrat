@@ -2,56 +2,66 @@
 
 - name: Configure Lab test devices with default configurations
   hosts:
-    - test_switches
-    - test_routers
-    - test_firewalls
+    - infrastructure-switch
+    - test-switch
+    - test-router
+    - test-firewall
+  roles:
+    - Juniper.junos
   connection: local
   gather_facts: no
   vars:
-    main_conf_dir: "{{ playbook_dir }}/.config/compiled"
-    main_diff_dir: "{{ playbook_dir }}/.config/diff"
+    main_conf_dir: "{{ playbook_dir }}/.config"
 
   pre_tasks:
-    - name: Clear folders
-      file:
-        path: "{{ playbook_dir }}/.config"
-        state: absent
-      run_once: True
-      changed_when: False
-      check_mode: no
-      ignore_errors: yes
-    - name: Define working directories
+    - name: Set some facts
       set_fact:
         conf_dir: "{{ main_conf_dir }}/{{ inventory_hostname }}"
-        diff_dir: "{{ main_diff_dir }}/{{ inventory_hostname }}"
-      changed_when: False
-      check_mode: no
+      changed_when: false
+      check_mode: false
+      tags: always
+    - name: Clear folders
+      file:
+        path: "{{ item }}"
+        state: absent
+      run_once: true
+      with_items:
+        - "{{ main_conf_dir }}"
+      changed_when: false
+      check_mode: false
+      tags: always
     - name: Recreate folders
       file:
         path: "{{ item }}"
         state: directory
+        mode: 02775
       with_items:
         - "{{ conf_dir }}"
-        - "{{ diff_dir }}"
-      changed_when: False
-      check_mode: no
-    - name: Get facts
-      include_role:
-        name: facts
-      changed_when: False
-      check_mode: no
-      when: napalm_facts is not defined
+      changed_when: false
+      check_mode: false
+      tags: always
+
 
   tasks:
+    - name: Facts
+      include_role:
+        name: facts
+      tags:
+        - never
+        - facts
+
     - name: Management
       include_role:
         name: management
+      tags: always
 
     - name: Raw commands
       include_role:
         name: raw
       when: raw is defined
+      tags: always
 
     - name: Deploy
       include_role:
         name: deploy
+      tags: always

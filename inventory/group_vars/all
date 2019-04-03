@@ -1,0 +1,77 @@
+---
+
+#location : UK - London - Century Link
+
+#snmp:
+#  notification_servers:
+#    - 10.35.2.1
+#  contact: Lab UK <Lab-UK@eplus.com>
+#  ro_communities:
+#    - public
+
+#domain_name: lon.eplus.lab
+#name_servers:
+#  - 10.35.2.1
+#
+#ntp_servers:
+#  - 10.35.2.1
+#
+#syslog_servers:
+#  - 10.35.2.1
+#
+#radius_servers:
+#  - 10.35.2.1
+
+#management_subnet: 10.0.0.0/8
+
+#timezone: Europe/London
+
+local_admin_user: igx
+local_admin_password:
+  eos: $6$z07N1/AIqmbJfRba$7b/6TIkigTrgzKRbyuy3bOxU6tNVV62p2coSxL0bQJbJoouNOdT/GyjyWCH8VRrlk/qsnHoILhZ4ArXHco2xc0
+  junos: $1$Tix/9uAK$lNG4d3gUiA8PCr04Nwr7b.
+
+radius_key:
+  eos: 072606745C081D0C0201
+  junos: $9$9WSOAuByrKvL7cylMWLVbZUjHfz69p
+
+
+
+
+vendor: "{{ napalm_vendor | default('') }}"
+model: "{{ napalm_model | default('') }}"
+serial_number: "{{ napalm_serial_number | default('') }}"
+version: "{{ napalm_os_version | default('') }}"
+
+uri_remote_location: ftp://viper.lon.eplus.lab/Temporary/
+ansible_host: "{{ inventory_hostname }}.lon.eplus.lab"
+management_address: "{{ lookup('dig', ansible_host, wantlist=True)[0] + '/24' }}"
+
+banner: |
+   *******************************************************
+   *     ___ ______  __   ____ _       _           _     *
+   *    |_ _/ ___\ \/ /  / ___| | ___ | |__   __ _| |    *
+   *     | | |  _ \  /  | |  _| |/ _ \| '_ \ / _` | |    *
+   *     | | |_| |/  \  | |_| | | (_) | |_) | (_| | |    *
+   *    |___\____/_/\_\  \____|_|\___/|_.__/ \__,_|_|    *
+   *                                                     *
+   * Unauthorized access to this device is prohibited.   *
+   * Unauthorized use will be prosecuted.                *
+   * This connection is monitored and your address will  *
+   * be logged.                                          *
+   *                                                     *
+   *******************************************************
+
+motd: |
+   *******************************************************
+   *                                                     *
+   * {{ "%-51s" | format(ansible_host) }} *
+   *                                                     *
+   * {{ "Address: %-42s" | format(management_address | ipaddr('address')) }} *
+   * {{ "Vendor: %-43s" | format(vendor) }} *
+   * {{ "Model: %-44s" | format(model) }} *
+   * {{ "SN: %-47s" | format(serial_number) }} *
+   * {{ "Version: %-42s" | format(version) }} *
+   *                                                     *
+   *******************************************************
+

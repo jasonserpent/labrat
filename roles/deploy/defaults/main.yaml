@@ -1,25 +1,34 @@
 ---
-use_napalm: true
-eos_transport: api
-pause: 30
-nolog: false
 timeout: 60
+
+
+#napalm_provider:
+#  dev_os : "{{ ansible_network_os }}"
+#  host: "{{ ansible_host }}"
+#  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+#  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+#  timeout: "{{ timeout }}"
+#  transport: "{{ napalm_transport }}"
 
 eos_provider:
   host: "{{ ansible_host }}"
-  #username: "{{ ansible_user }}"
-  #password: "{{ ansible_pass }}"
-  authorize: "yes"
-  transport: "{{ eos_transport }}"
-  use_ssl: "yes"
-  validate_certs: "no"
+  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
   timeout: "{{ timeout }}"
+  transport: cli
 
+junos_provider:
+  host: "{{ ansible_host }}"
+  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+  timeout: "{{ timeout }}"
+  ports: 22
 
 napalm_provider:
-  dev_os: "{{ os }}"
+  dev_os : "{{ ansible_network_os }}"
   host: "{{ ansible_host }}"
-  #username: "{{ ansible_user }}"
-  #password: "{{ ansible_pass }}"
-  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') }}"
-  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') }}"
+  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'user'), true) }}"
+  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+  timeout: "{{ timeout }}"
+  transport: "{{ napalm_transport }}"
+
