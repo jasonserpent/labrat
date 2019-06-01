@@ -2,7 +2,7 @@
 
 - name: Configure Lab test devices with default configurations
   hosts:
-    - infrastructure-switch
+    - infrastructure-network
     - test-switch
     - test-router
     - test-firewall

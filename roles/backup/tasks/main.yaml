@@ -1,0 +1,13 @@
+---
+
+- name: Get running configuration
+  napalm_get_facts:
+    provider: "{{ napalm_provider }}"
+    filter: ['config']
+  register: facts_config
+
+- name: Save configuration
+  copy:
+    content: "{{ facts_config.ansible_facts.napalm_config.running }}"
+    dest: "backups/{{ inventory_hostname }}.{{ ansible_network_os }}"
+  diff: true

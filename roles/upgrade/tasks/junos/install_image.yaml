@@ -3,7 +3,7 @@
 - name: Install new image
   juniper_junos_software:
     provider: "{{ junos_provider }}"
-    remote_package: "{{ swi_url}}"
+    remote_package: "{{ swi_url }}"
     reboot: yes
     logfile: "{{ conf_dir }}/software.log"
     all_re: yes

@@ -18,9 +18,9 @@ import pynetbox
 #from ansible.parsing.yaml.loader import AnsibleLoader
 #from ansible.parsing.dataloader import DataLoader
 
-NETBOX_URL = 'http://netbox.lon.eplus.lab:81/'
-MANUFACTURERS = ['arista', 'cisco', 'juniper', 'avocent']
-DEVICE_ROLES = ['test-switch', 'test-router', 'infrastructure-switch', 'test-firewall']
+NETBOX_URL = 'http://netbox.lon.eplus.lab/'
+MANUFACTURERS = ['arista', 'cisco', 'juniper']
+DEVICE_ROLES = ['test-switch', 'test-router', 'infrastructure-network', 'test-firewall']
 
 
 

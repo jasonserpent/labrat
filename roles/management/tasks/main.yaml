@@ -1,5 +1,5 @@
 ---
-- name: Generate management configurations
+- name: Generate management configuration
   template:
     src: "management.j2"
     dest: "{{ conf_dir}}/01_management.conf"

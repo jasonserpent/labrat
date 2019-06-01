@@ -33,15 +33,7 @@
   changed_when: not result.msg == ""
   tags: always
 
-- name: Pause
-  pause:
-    prompt: Last chance to cancel changes
-    seconds: 60
-  when: not ansible_check_mode and not result.msg == ""
-  tags: always
-
-
-- name: Install configuration
+- name: Commit new configuration
   napalm_install_config:
     provider: "{{ napalm_provider }}"
     config_file: "{{ conf_dir }}/assembled.conf"

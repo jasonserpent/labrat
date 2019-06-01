@@ -1,0 +1,11 @@
+---
+
+- name: Save current running configuration of network device using NAPALM
+  hosts:
+    - all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - include_role:
+        name: backup

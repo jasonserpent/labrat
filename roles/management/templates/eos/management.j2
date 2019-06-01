@@ -70,7 +70,7 @@ redundancy
 {% endif %}
 !
 {% if management_gateway is defined %}
-ip route vrf {{ mgmt_vrf }} {{ management_subnet | default('0.0.0.0/0') }} {{ management_gateway }}
+ip route vrf {{ mgmt_vrf }} 0.0.0.0/0 {{ management_gateway }}
 !
 {% endif %}
 !

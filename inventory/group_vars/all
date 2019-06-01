@@ -1,5 +1,7 @@
 ---
 
+ansible_python_interpreter: /home/pantunes/Eplus/labuk/.direnv/python-3.6.7/bin/python
+
 #location : UK - London - Century Link
 
 #snmp:
