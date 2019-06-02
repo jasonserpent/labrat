@@ -1,17 +1,11 @@
 ---
 
-- name: Facts
-  include_role:
-    name: facts
-  when: perform_upgrade
-
 - name: Generate new banner
   template:
-    src: "{{ os }}/banner.j2"
+    src: "{{ ansible_network_os }}/banner.j2"
     dest: "{{ conf_dir}}/banner.conf"
   check_mode: no
   changed_when: false
-  when: perform_upgrade
 
 - name: Update login banner
   juniper_junos_config:
@@ -20,5 +14,4 @@
     format: "text"
     load: 'merge'
     check: false
-    comment: 'Updating banner after upgrade'
-  when: perform_upgrade
+    comment: 'Updating banner after software upgrade'

@@ -1,6 +1,3 @@
 ---
 management:
   interface: me0
-
-swi_url: http://public.lon.eplus.lab/images/junos/ex/jinstall-ex-4300-15.1R6.7-domestic-signed.tgz
-target_version: 15.1R6.7

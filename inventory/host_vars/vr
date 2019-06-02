@@ -1,6 +1,3 @@
 ---
 management:
   interface: fxp0
-
-swi_url: http://public.lon.eplus.lab:81/images/junos/srx/junos-srxentedge-15.1X49-D150.2-domestic.tgz 
-target_version: 15.1X49-D150.2

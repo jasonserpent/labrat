@@ -7,9 +7,12 @@
       - interfaces
       - environment
       - interfaces_ip
-  tags: always
+  tags: 
+    - napalm
+    - always
 
-- name: Gather facts
+- name: Gather vendor specific facts
   include_tasks: "{{ ansible_network_os }}/facts.yaml"
-  tags: always
+  tags: 
+    - always
 

@@ -1,0 +1,29 @@
+---
+
+- name: Gather NAPALM facts
+  napalm_get_facts:
+    provider: "{{ napalm_provider }}"
+    filter:
+      - facts
+
+- name: Gather Junos facts
+  juniper_junos_facts:
+    provider: "{{ junos_provider }}"
+
+- name: Extract versions
+  set_fact:
+    target_version: "{{ image_url | regex_replace('^http://.*\/j.*-(([0-9\\.]+R[0-9\\.]+)|([0-9\\.]+X[0-9]+-D[0-9\\.]+))(-.*)?.tgz$', '\\1') }}"
+    current_version: "{{ napalm_os_version }}"
+
+- name: Check if upgrade is necessary
+  debug:
+    msg: "Hardware is {{ napalm_model }}. Current version is {{ current_version }}. Target version is {{ target_version }}. Image is at {{ image_url }}."
+  changed_when: target_version != current_version
+
+    #- name: Check if upgrade is necessary
+    #  assert:
+    #    that:
+    #        - "current_version != target_version"
+    #      fail_msg: "Current version is {{ current_version }}. Target version is {{ target_version }}."
+    #      success_msg: "Current version is {{ current_version }}. Target version is {{ target_version }} (Downloaded from {{ image_url }})."
+    #    quiet: true

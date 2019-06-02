@@ -1,37 +1,42 @@
 ---
 
-- name: Upgrade
+- name: Install new software image
   hosts:
-    - all
+    - test-switch
+    - test-router
+    - test-firewall
+  roles:
+    - Juniper.junos
   connection: local
-  gather_facts: "no"
+  gather_facts: false
   vars:
-    main_conf_dir: "{{ playbook_dir }}/.config/upgrade"
+    main_conf_dir: "{{ playbook_dir }}/.config"
 
   pre_tasks:
     - name: Clear folders
       file:
         path: "{{ playbook_dir }}/.config"
         state: absent
-      run_once: True
-      changed_when: False
-      check_mode: no
-      ignore_errors: yes
+      run_once: true
+      changed_when: false
+      check_mode: false
+      ignore_errors: true
     - name: Define working directories
       set_fact:
         conf_dir: "{{ main_conf_dir }}/{{ inventory_hostname }}"
-      changed_when: False
-      check_mode: no
+      changed_when: false
+      check_mode: false
     - name: Recreate folders
       file:
         path: "{{ item }}"
         state: directory
       with_items:
         - "{{ conf_dir }}"
-      changed_when: False
-      check_mode: no
+      changed_when: false
+      check_mode: false
+
   tasks:
     - name: Upgrade
       include_role:
-        name: upgrade
-      when: swi_url is defined and target_version is defined
+        name: image
+      when: image_url is defined

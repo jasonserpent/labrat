@@ -65,7 +65,7 @@ groups {
                 configuration {
                     transfer-on-commit;
                     archive-sites {
-                        ftp://viper.lon.eplus.lab:/Archive/{{ inventory_hostname_short }};
+                        ftp://viper.lon.eplus.lab:/Archive/{{ inventory_hostname_short }}.junos;
                     }
                 }
             }
@@ -86,6 +86,9 @@ groups {
                 }
 {% endfor %}
             }
+{% if junos.has_2RE or junos.vc_mode == 'Enabled' %}
+            commit synchronize;
+{% endif %}
             ntp {
 {% for ntp_server in ntp_servers -%}
   {% if loop.index == 1 %}

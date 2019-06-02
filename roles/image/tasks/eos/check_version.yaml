@@ -11,6 +11,7 @@
 - name: Show current version
   debug:
     msg: "Current version is {{ showvers.stdout[0].version }}. Target version is {{ target_version }}."
+  changed_when: "{{ target_version not in showvers['stdout'][0]['version'] }}"
 
     #- name: Check management VRF
     #  debug:
@@ -20,10 +21,6 @@
     #- name: Quit if management.vrf_lite is defined
     #  meta: end_play
     #  when: management.vrf_lite is defined
-
-- name: quit if check_mode
-  meta: end_play
-  when: ansible_check_mode 
 
 - name: Checking if upgrade is necessary
   set_fact:

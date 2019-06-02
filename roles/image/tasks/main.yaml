@@ -1,0 +1,12 @@
+---
+
+- name: Check version
+  include_tasks: "{{ ansible_network_os }}/check_version.yaml"
+
+  #- name: Copy image
+  #  include_tasks: "{{ os }}/copy_image.yaml"
+
+- name: Install image
+  include_tasks: "{{ ansible_network_os }}/install_image.yaml"
+  when: current_version != target_version and not ansible_check_mode
+

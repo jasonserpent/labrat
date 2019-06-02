@@ -1,0 +1,70 @@
+---
+
+- name: Install new image
+  juniper_junos_software:
+    host: "{{ ansible_host }}"
+    timeout: "{{ install_timeout | default(1800) }}"
+    remote_package: "{{ image_url }}"
+    cleanfs: "{{ cleanfs | default(true) }}"
+    validate: "{{ validate | default(false) }}"
+    all_re: "{{ junos.has_2RE | default(false) }}"
+    force_host: "{{ force_host | default(false) }}"
+    vmhost: "{{ vmhost | default(false) }}"
+    reboot: true
+    #logdir: "/tmp"    # does not work
+    reboot_pause: 10   # The amount of time, in seconds, to wait after the reboot is issued before the module returns.
+                       # This gives time for the reboot to begin.
+                       # Keep it at least 300
+  register: response
+  ignore_errors: true  # true because some Junos version dont't properly close the NETCONF connection before rebooting
+
+
+  #- name: Show output
+  #  debug:
+  #    var: response
+  #  changed_when: response.changed
+  #  when: not (response.failed and "MODULE FAILURE" not in response.msg)
+
+- name: Check if upgrade failed
+  fail:
+    msg: "{{ response.msg }}"
+  when: response.failed and "MODULE FAILURE" not in response.msg     # this is because some Junos versions cause juniper_junos_software to crash
+
+- name: Wait for the device to come back online
+  wait_for:
+    host: "{{ inventory_hostname }}"
+    port: 22
+    delay: 180                             # Number of seconds to wait before starting to poll.
+    connect_timeout: 5                     # Maximum number of seconds to wait for a connection to happen before closing and retrying.
+    sleep: 5                               # Number of seconds to sleep between checks.
+    timeout: "{{ reboot_timeout }}"        # Maximum number of seconds to wait for, when used with another condition it will force an error.
+
+#- name: Wait for mgd to be up
+#  pause:
+#    seconds: "{{ delay_login }}"
+
+- name: Gather NAPALM facts
+  napalm_get_facts:
+    provider: "{{ napalm_provider }}"
+    filter:
+      - facts
+  until: not response.failed
+  retries: 30
+  delay: 5
+  register: response
+  ignore_errors: true
+
+  #- name: Show output
+  #  debug:
+  #    var: response
+
+- name: Check new Junos version
+  assert:
+    that:
+      - "'{{ target_version }}' == '{{ napalm_os_version }}'"
+    fail_msg: "Upgrade failed. New version is {{ napalm_os_version }} instead of {{ target_version }}."
+    success_msg: "Upgrade succeeded. New version is {{ napalm_os_version }}."
+
+- name: Update banner
+  include_tasks: "{{ ansible_network_os }}/update_banner.yaml"
+  when: (target_version == napalm_os_version ) and (banner is defined or motd is defined)
