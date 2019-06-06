@@ -9,7 +9,3 @@
   tasks:
     - include_role:
         name: facts
-
-    - name: Show output
-      debug:
-        var: junos.has_2RE

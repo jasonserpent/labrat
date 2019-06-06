@@ -1,32 +1,7 @@
 ---
 
-ansible_python_interpreter: /home/pantunes/Eplus/labuk/.direnv/python-3.6.7/bin/python
-
-#location : UK - London - Century Link
-
-#snmp:
-#  notification_servers:
-#    - 10.35.2.1
-#  contact: Lab UK <Lab-UK@eplus.com>
-#  ro_communities:
-#    - public
-
-#domain_name: lon.eplus.lab
-#name_servers:
-#  - 10.35.2.1
-#
-#ntp_servers:
-#  - 10.35.2.1
-#
-#syslog_servers:
-#  - 10.35.2.1
-#
-#radius_servers:
-#  - 10.35.2.1
-
-#management_subnet: 10.0.0.0/8
-
-#timezone: Europe/London
+#ansible_python_interpreter: /home/pedro/Eplus/labuk/ansible/.direnv/python-3.7.2+/bin/python
+ansible_python_interpreter: .direnv/python-3.7.2+/bin/python
 
 local_admin_user: igx
 local_admin_password:
