@@ -1,0 +1,53 @@
+---
+
+- name: Configure network devices
+  hosts:
+    - test-switch
+    - test-router
+    - test-firewall
+  connection: local
+  gather_facts: no
+
+  tasks:
+
+    - name: Install new configuration
+      napalm_install_config:
+        dev_os : "{{ ansible_network_os }}"
+        hostname: "{{ ansible_host }}"
+        username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+        password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+        archive_file: "/tmp/old_{{ inventory_hostname }}.{{ ansible_network_os }}"
+        config_file: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
+        commit_changes: true
+        replace_config: true
+        get_diffs: true
+      register: output
+      check_mode: false
+    
+#    - debug:
+#        var: output
+
+    - name: Get new well-formatted configuration
+      napalm_get_facts:
+        dev_os : "{{ ansible_network_os }}"
+        hostname: "{{ ansible_host }}"
+        username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+        password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+        filter: ['config']
+      register: facts_new_config
+      diff: false
+      changed_when: false
+ 
+    - name: Save new well-formatted configuration
+      copy:
+        content: "{{ facts_new_config.ansible_facts.napalm_config.running }}"
+        dest: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
+      diff: false
+
+    - name: Show diffs of previous commit
+      copy:
+        src: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
+        dest: "/tmp/old_{{ inventory_hostname }}.{{ ansible_network_os }}"
+      diff: true
+      when: output.changed
+
