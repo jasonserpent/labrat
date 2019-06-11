@@ -2,31 +2,4 @@
 delete_current_images: False
 delay_poll_after_reboot: 180
 reboot_timeout: 1800
-delay_login: 180
-connect_timeout: 60
 
-eos_transport: api
-
-eos_provider:
-  host: "{{ ansible_host }}"
-  #username: "{{ ansible_user }}"
-  #password: "{{ ansible_pass }}"
-  authorize: "yes"
-  transport: "{{ eos_transport }}"
-  use_ssl: "yes"
-  validate_certs: "no"
-  timeout: "{{ connect_timeout }}"
-
-junos_provider:
-  host: "{{ ansible_host }}"
-  #username: "{{ ansible_user }}"
-  #password: "{{ ansible_pass }}"
-  timeout: "{{ connect_timeout }}"
-
-napalm_provider:
-  dev_os : "{{ ansible_network_os }}"
-  host: "{{ ansible_host }}"
-  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
-  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
-  timeout: "{{ connect_timeout }}"
-  transport: "{{ napalm_transport }}"

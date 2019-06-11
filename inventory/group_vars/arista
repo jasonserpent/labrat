@@ -7,9 +7,17 @@ management:
   interface: Management1
   vrf_lite: MANAGEMENT
 
-swi_url: http://public.igx-emea.lab/images/arista/EOS-4.20.5F.swi
-target_version: 4.20.5F
-
-#swi_url: http://public.igx-emea.lab/images/arista/EOS-4.19.5M.swi
-#target_version: 4.19.5M
-
+eos_provider:
+  host: "{{ ansible_host }}"
+  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+  timeout: "{{ timeout }}"
+  transport: cli
+  
+napalm_provider:
+  dev_os : "{{ ansible_network_os }}"
+  host: "{{ ansible_host }}"
+  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+  timeout: "{{ timeout }}"
+  transport: "{{ napalm_transport | default(omit) }}"

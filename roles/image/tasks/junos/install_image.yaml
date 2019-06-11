@@ -12,7 +12,7 @@
     vmhost: "{{ vmhost | default(false) }}"
     reboot: true
     logdir: "{{ conf_dir }}"     # does not work if module crashes
-    reboot_pause: 10   # The amount of time, in seconds, to wait after the reboot is issued before the module returns.
+    reboot_pause: 30   # The amount of time, in seconds, to wait after the reboot is issued before the module returns.
                        # This gives time for the reboot to begin.
                        # Keep it at least 10
   register: response
@@ -24,14 +24,14 @@
   changed_when: response.changed
   when: not (response.failed and "MODULE FAILURE" in response.msg)
 
-- name: Abort if swoftware installation failed
+- name: Abort if software installation failed
   fail:
     msg: "{{ response.msg }}"
   when: response.failed and "MODULE FAILURE" not in response.msg     # this is because some Junos versions cause juniper_junos_software to crash
 
 - name: Wait for the device to come back online
   wait_for:
-    host: "{{ inventory_hostname }}"
+    host: "{{ ansible_host }}"
     port: 22
     delay: 1                               # Number of seconds to wait before starting to poll.
     connect_timeout: 5                     # Maximum number of seconds to wait for a connection to happen before closing and retrying.
@@ -40,7 +40,7 @@
 
 #- name: Wait for mgd to be up
 #  pause:
-#    seconds: "{{ delay_login }}"
+#    seconds: "{{ delay_login | default(1) }}"
 
 - name: Gather NAPALM facts
   napalm_get_facts:

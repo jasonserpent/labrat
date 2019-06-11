@@ -24,7 +24,8 @@ DEVICE_ROLES = ['test-switch', 'test-router', 'infrastructure-network', 'test-fi
 
 
 
-INVENTORY_PATH = '/home/pantunes/demos/labuk/playbooks/inventory/'
+#INVENTORY_PATH = '/home/pedro/Eplus/labuk/ansible/inventory/'
+INVENTORY_PATH = './inventory/'
 
 nb = pynetbox.api(NETBOX_URL)
 
@@ -78,7 +79,7 @@ def _load_yaml_vars(filename):
     if os.path.isfile(filename):
         try:
             with open(filename) as v_file:
-                y_vars = yaml.load(v_file)
+                y_vars = yaml.safe_load(v_file)
                 if y_vars:
                     return y_vars
                 return {}

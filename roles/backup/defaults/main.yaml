@@ -2,25 +2,3 @@
 timeout: 120
 
 
-eos_provider:
-  host: "{{ ansible_host }}"
-  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
-  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
-  timeout: "{{ timeout }}"
-  transport: cli
-
-junos_provider:
-  host: "{{ ansible_host }}"
-  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
-  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
-  timeout: "{{ timeout }}"
-  ports: 22
-
-napalm_provider:
-  dev_os : "{{ ansible_network_os }}"
-  host: "{{ ansible_host }}"
-  username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
-  password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
-  timeout: "{{ timeout }}"
-  transport: "{{ napalm_transport }}"
-

@@ -27,6 +27,8 @@ no radius-server host
 {% for radius_server in radius_servers %}
 radius-server host {{ radius_server }} vrf {{ mgmt_vrf }} key 7 {{ radius_key.eos }}
 {% endfor %}
+no ip radius source-interface {{ management.interface }}
+ip radius vrf {{ mgmt_vrf }} source-interface {{ management.interface }}
 !
 no ntp
 no ntp source
@@ -62,6 +64,7 @@ spanning-tree mode rapid-pvst
 !
 enable secret sha512 {{ enable_secret }}
 {% endif %}
+username admin privilege 15 role network-admin secret sha512 {{ local_admin_password.eos }}
 username {{ local_admin_user }} privilege 15 role network-admin secret sha512 {{ local_admin_password.eos }}
 {% if redundancy is defined | default(False) %}
 !

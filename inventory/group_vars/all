@@ -3,6 +3,10 @@
 #ansible_python_interpreter: /home/pedro/Eplus/labuk/ansible/.direnv/python-3.7.2+/bin/python
 ansible_python_interpreter: .direnv/python-3.7.2+/bin/python
 
+timeout: 180
+
+
+
 local_admin_user: igx
 local_admin_password:
   eos: $6$z07N1/AIqmbJfRba$7b/6TIkigTrgzKRbyuy3bOxU6tNVV62p2coSxL0bQJbJoouNOdT/GyjyWCH8VRrlk/qsnHoILhZ4ArXHco2xc0
