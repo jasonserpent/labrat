@@ -1,0 +1,174 @@
+---
+#- name: Netbox - Servers and hypervisors
+#  hosts:
+#    - servers
+#    - hypervisors
+#  gather_facts: false
+#  pre_tasks:
+#    - name: Reading secrets
+#      include_vars: "{{ secrets_file }}"
+#      run_once: true
+#      tags:
+#        - server
+#
+#  tasks:
+#
+#    - name: Gather facts
+#      setup:
+#      tags:
+#        - server
+#
+#    - name: Collect server details
+#      command: "{{ item }}"
+#      changed_when: false
+#      ignore_errors: true
+#      with_items:
+#        - omreport system summary -fmt xml
+#        - omreport chassis ports -fmt xml
+#        - omreport chassis pwrsupplies -fmt xml
+#        - omreport storage pdisk controller=0 -fmt xml
+#        - omreport storage vdisk controller=0 -fmt xml
+#      register: output
+#      tags:
+#        - server
+#
+#    - name: Update server details on Netbox
+#      netbox_server:
+#        netbox_url: "{{ netbox_url }}"
+#        netbox_token: "{{ netbox_token }}"
+#        dell_api_key: "{{ dell_api_key }}"
+#        facts: "{{ ansible_facts }}"
+#        summary: "{{ output['results'][0]['stdout'] | default('') }}"
+#        ports: "{{ output['results'][1]['stdout'] | default('') }}"
+#        psu: "{{ output['results'][2]['stdout'] | default('') }}"
+#        pdisks: "{{ output['results'][3]['stdout'] | default('') }}"
+#        vdisks: "{{ output['results'][4]['stdout'] | default('') }}"
+#      register: output
+#      delegate_to: 127.0.0.1
+#      tags:
+#        - server
+
+
+- name: Netbox - Network devices
+  hosts:
+    - test-switch
+    - test-router
+    - test-firewall
+    - infrastructure-network
+  connection: local
+  gather_facts: "no"
+  environment:
+    PYTHONHTTPSVERIFY: 0
+    #pre_tasks:
+    #  - name: Reading secrets
+    #    include_vars: "{{ secrets_file }}"
+    #    run_once: true
+    #    tags:
+    #      - environment
+    #      - interfaces
+    #      - addresses
+
+  tasks:
+
+    - name: Update device environment
+      netbox_environment:
+        dev_os: "{{ ansible_network_os }}"
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        provider:
+          username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+          password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+      register: output
+      connection: local
+      tags:
+        - environment
+
+    - name: Create and update interfaces properties
+      netbox_interfaces:
+        dev_os: "{{ ansible_network_os }}"
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        provider:
+          username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+          password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+      register: output
+      connection: local
+      tags:
+        - interfaces
+
+
+    - name: Update IP addresses
+      netbox_addresses:
+        dev_os: "{{ ansible_network_os }}"
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        provider:
+          username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+          password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+      register: output
+      connection: local
+      tags:
+        - addresses
+
+          ##    - debug:
+          ##        var: output
+          ##      tags:
+          ##        - always
+
+          #- name: Netbox - Terminal servers
+          #  hosts:
+          #    - terminal-servers
+          #  connection: local
+          #  gather_facts: "no"
+          #  pre_tasks:
+          #    - name: Reading secrets
+          #      include_vars: "{{ secrets_file }}"
+          #      run_once: true
+          #      tags:
+          #        - ts
+          #
+          #  tasks:
+          #
+          #    - name: Update terminal server
+          #      netbox_terminal_server:
+          #        netbox_url: "{{ netbox_url }}"
+          #        netbox_token: "{{ netbox_token }}"
+          #        provider:
+          #          username: '{{ ts_username | default(omit) }}'
+          #          password: '{{ ts_password | default(omit) }}'
+          #      register: output
+          #      connection: local
+          #      tags:
+          #        - ts
+
+
+          #- name: LibreNMS
+          #  hosts:
+          #    - servers
+          #    - hypervisors
+          #    - network-devices
+          #  gather_facts: "no"
+          #  pre_tasks:
+          #    - name: Reading secrets
+          #      include_vars: "{{ secrets_file }}"
+          #      run_once: true
+          #      tags:
+          #        - nms
+          #
+          #  tasks:
+          #
+          #    - name: Add device to LibreNMS
+          #      uri:
+          #        url: "{{ librenms_url}}/api/v0/devices"
+          #        method: POST
+          #        headers:
+          #          "X-Auth-Token": "{{ librenms_token }}"
+          #        body: "{\"hostname\":\"{{ inventory_hostname }}\",\"version\":\"v2c\",\"community\":\"m41lc0ntr0l\"}"
+          #        body_format: json
+          #      connection: local
+          #      register: register_nms
+          #      changed_when: false
+          #      failed_when: register_nms.json.status == "error" and "Already have host" not in register_nms.json.message
+          #      ignore_errors: true
+          #      tags:
+          #        - nms

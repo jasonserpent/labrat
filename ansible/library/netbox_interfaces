@@ -1,0 +1,453 @@
+#!/usr/bin/env python
+
+# References:
+# pynetbox API:
+#  https://pynetbox.readthedocs.io/en/latest/index.html
+
+
+
+
+import sys
+import re
+from pynetbox import RequestError
+import pynetbox
+from ansible.module_utils.basic import AnsibleModule
+
+
+import pyeapi
+from jnpr.junos import Device
+from lxml import etree
+
+
+napalm_found = False
+try:
+    from napalm import get_network_driver
+    from napalm.base import ModuleImportError
+    napalm_found = True
+except ImportError:
+    pass
+
+
+
+IGNORE_IFD_PATTERN = '(^(dsc|gre|demux0|cbp0|ipip|lsi|vlan|irb|pimd|pime|mtun|\.local\.|pime|pimd|tap|pip0|pp0)$)' \
+                 '|(^(lsi.*)$)' \
+                 '|(^(fti.*)$)' \
+                 '|(^(lo0\.16384|lo0\.16385)$)' \
+                 '|(^(sp|lc|pfe|pfh|mt|ip|gr|pd|pe|ut|vt)\-)' \
+                 '|(^(bme0|rbeb|bme1|jsrv|esi|vtep|em1|em2))' \
+                 '|(^(lt|ud)-\d+\/\d+\/\d+$)' \
+                 '|(^.*\.(16386|32767|32768)$)'
+
+IGNORE_MAC_PATTERN = '^02\:00\:0'
+
+
+MANAGEMENT_IFD_PATTERN = 'Management|fxp0|em0|em1|me0|vme'
+
+STATIC_IFD_CHOICES = {
+        'Virtual': 0,
+        'LAG': 200,
+        'Other': 32767
+        }
+
+
+def _is_management_interface(if_name):
+    return re.match(MANAGEMENT_IFD_PATTERN, if_name)
+
+def _ignore_interface(if_name):
+    return re.match(IGNORE_IFD_PATTERN, if_name)
+
+def _ignore_mac_address(mac):
+    return re.match(IGNORE_MAC_PATTERN, mac)
+
+def _get_interface_names(interfaces):
+    names = []
+    for i in interfaces:
+        names.append(i.name)
+    return names
+
+def _get_interface_by_name(interfaces, name):
+    for i in interfaces:
+        if i.name == name:
+            return i
+
+def _get_lag_interfaces(device):
+    lag_interfaces = {}
+    return lag_interfaces
+
+def _get_other_end(nb_connections, nb_device, if_name):
+    for nb_connection in nb_connections:
+        if nb_connection.interface_a.device.id == nb_device.id and nb_connection.interface_a.name == if_name:
+            return nb_connection, nb_connection.interface_b.device.name, nb_connection.interface_b.name
+        if nb_connection.interface_b.device.id == nb_device.id and nb_connection.interface_b.name == if_name:
+            return nb_connection, nb_connection.interface_a.device.name, nb_connection.interface_a.name
+
+
+def _guess_interface_formfactor(nb_device, nb_ifd):
+    if_name = nb_ifd.name
+
+    #if 'Port-Channel' in if_name or ('ae' in if_name and not '.' in if_name):
+    if re.match('^(Port-Channel\d+|ae\d+)$', if_name):
+       return STATIC_IFD_CHOICES['LAG']
+    elif re.match('^(Loopback\d+|Vlan\d+|vlan\.\d+|vme|lo0)$', if_name):
+        return STATIC_IFD_CHOICES['Virtual']
+    elif re.match('.*\..*', if_name):
+        return STATIC_IFD_CHOICES['Virtual']
+
+    return STATIC_IFD_CHOICES['Other']
+
+
+def run_module():
+    # define available arguments/parameters a user can pass to the module
+    module_args = dict(
+        netbox_url=dict(type='str', required=True),
+        netbox_token=dict(type='str', required=True),
+        return_netbox_neighbors=dict(type='bool', required=False, default=False),
+        connect_interfaces=dict(type='bool', required=False, default=False),
+        create_interfaces=dict(type='bool', required=False, default=False),
+        hostname=dict(type='str', required=False, aliases=['host']),
+        username=dict(type='str', required=False),
+        password=dict(type='str', required=False, no_log=True),
+        provider=dict(type='dict', required=False),
+        dev_os=dict(type='str', required=False),
+        timeout=dict(type='int', required=False, default=60),
+        ignore_notimplemented=dict(type='bool', required=False, default=False),
+        args=dict(type='dict', required=False, default=None),
+        optional_args=dict(type='dict', required=False, default=None)
+    )
+
+
+    module = AnsibleModule(
+        argument_spec=module_args,
+        supports_check_mode=True
+    )
+
+
+    provider = module.params['provider'] or {}
+
+    # allow host or hostname
+    provider['hostname'] = provider.get('hostname', None) or provider.get('host', None)
+    # allow local params to override provider
+    for param, pvalue in provider.items():
+        if module.params.get(param) is not False:
+            module.params[param] = module.params.get(param) or pvalue
+
+    hostname = module.params['hostname']
+    username = module.params['username']
+    netbox_url = module.params['netbox_url']
+    netbox_token = module.params['netbox_token']
+    dev_os = module.params['dev_os']
+    password = module.params['password']
+    timeout = module.params['timeout']
+    args = module.params['args'] or {}
+    ignore_notimplemented = module.params['ignore_notimplemented']
+    implementation_errors = []
+
+
+    argument_check = {'hostname': hostname, 'username': username, 'dev_os': dev_os}
+    for key, val in argument_check.items():
+        if val is None:
+            module.fail_json(msg=str(key) + " is required")
+
+    if module.params['optional_args'] is None:
+        optional_args = {}
+    else:
+        optional_args = module.params['optional_args']
+
+    try:
+        network_driver = get_network_driver(dev_os)
+    except ModuleImportError as e:
+        module.fail_json(msg="Failed to import napalm driver: " + str(e))
+
+
+    try:
+        device = network_driver(hostname=hostname,
+                                username=username,
+                                password=password,
+                                timeout=timeout,
+                                optional_args=optional_args)
+        device.open()
+    except Exception as e:
+        module.fail_json(msg="cannot connect to device: " + str(e))
+
+    data = {}
+
+    result = dict(
+        changed=False
+    )
+
+
+    try:
+        for getter in ['interfaces', 'lldp_neighbors' ]:
+            getter_function = "get_{}".format(getter)
+            get_func = getattr(device, getter_function)
+            data[getter] = get_func(**args.get(getter, {}))
+
+        result['interfaces'] = data['interfaces']
+        result['lldp_neighbors'] = data['lldp_neighbors']
+
+    except NotImplementedError:
+        if ignore_notimplemented:
+            implementation_errors.append(getter)
+        else:
+            module.fail_json(
+                msg="The filter {} is not supported in napalm-{} [get_{}()]".format(
+                    getter, dev_os, getter))
+    except Exception as e:
+        module.fail_json(msg="[{}] cannot retrieve device data: ".format(getter) + str(e))
+
+    interfaces_on_device = data['interfaces']
+    lldp_neighbors = data['lldp_neighbors']
+
+
+    try:
+        device.close()
+    except Exception as e:
+        module.fail_json(msg="cannot close device connection: " + str(e))
+
+
+    nb = pynetbox.api(netbox_url, token=netbox_token)
+    try:
+        nb_device = nb.dcim.devices.get(name=hostname.split('.')[0])
+        nb_interfaces = nb.dcim.interfaces.filter(device_id=nb_device.id)
+    except Exception as e:
+        module.fail_json(msg="[{}] error when connection to Netbox: ".format(getter) + str(e))
+
+    # If the interface doesn't exist on NB  it will be created
+    # (For the moment all the interfaces will be of type 'Other')
+    # The MAC address, description are retrieved from the device
+    # If the interface exists, we update the MAC address and description
+    try:
+        for if_name, if_properties in interfaces_on_device.items():
+            # We ignore XXX.0 interface on Juniper devices
+            if re.match('^.*\.0$', if_name):
+                continue
+
+            if _ignore_interface(if_name):
+                continue
+
+            if _ignore_mac_address(if_properties['mac_address']):
+                continue
+
+            nb_interface = _get_interface_by_name(nb_interfaces, if_name)
+            if not nb_interface:
+
+                new_ifd = {
+                        "device": nb_device.id,
+                        "name": str(if_name),
+                        "form_factor": STATIC_IFD_CHOICES['Other']
+                }
+
+                try:
+                    nb.dcim.interfaces.create(**new_ifd)
+                    nb_interface = nb.dcim.interfaces.get(name=str(if_name), device_id=nb_device.id)
+                except Exception as e:
+                    continue
+
+
+            if if_properties['description'] != '':
+                nb_interface.description = str(if_properties['description'])
+            else:
+                nb_interface.description = ''
+
+            nb_interface.enabled = str(if_properties['is_up'] and if_properties['is_enabled'])
+
+            if not nb_interface.interface_connection and not nb_interface.interface_connection:
+                nb_interface.form_factor = _guess_interface_formfactor(nb_device, nb_interface)
+
+            if _is_management_interface(if_name):
+                nb_interface.mgmt_only = True
+            else:
+                nb_interface.mgmt_only = False
+
+            if if_properties['mac_address'] and re.match('([0-9A-F][0-9A-F]\:){5}[0-9A-F]', str(if_properties['mac_address'])):
+                nb_interface.mac_address = str(if_properties['mac_address'])
+            else:
+                nb_interface.mac_address = None
+
+            try:
+                nb_interface.save()
+            except Exception as e:
+                pass
+
+    except Exception as e:
+        module.fail_json(msg="Unable to find device interfaces on Netbox: ".format() + str(e))
+
+
+
+    # Now we delete interfaces present on Netbox that do not exist on the device
+    try:
+        nb_interfaces = nb.dcim.interfaces.filter(device_id=nb_device.id)
+        for i in nb_interfaces:
+            if_name = i.name
+            try:
+                if not if_name in interfaces_on_device.keys():
+                    i.delete()
+                if _ignore_interface(if_name):
+                    i.delete()
+                if _ignore_mac_address(str(i.mac_address)):
+                    i.delete()
+            except Exception as e:
+                pass
+
+    except Exception as e:
+        module.fail_json(msg="[{}] unable find device interfaces on Netbox: ".format(getter) + str(e))
+
+
+    ##Now we delete wrong connections on NB
+    #nb_connections = nb.dcim.interface_connections.filter(device=nb_device.name)
+    #for if_name, lldp_neighbor in lldp_neighbors.iteritems():
+    #    if_name = if_name.split('.')[0]
+    #    lldp_neighbor = lldp_neighbor[0]
+    #    try:
+    #        nb_connection, remote_device, remote_ifd = _get_other_end(nb_connections, nb_device, if_name)
+    #        if remote_device != lldp_neighbor['hostname'].split('.')[0] or remote_ifd != lldp_neighbor['port']:
+    #            nb_connection.delete()
+    #    except (RequestError, TypeError) as e:
+    #        continue
+
+
+    ##Now we add connections to NB
+    #nb_connections = nb.dcim.interface_connections.filter(device=nb_device.name)
+    #for if_name, lldp_neighbor in lldp_neighbors.iteritems():
+    #    if_name = if_name.split('.')[0]
+    #    lldp_neighbor = lldp_neighbor[0]
+    #    try:
+    #        #if _get_other_end(nb_connections, nb_device, if_name):
+    #        #    continue
+    #        nb_interface_a = nb.dcim.interfaces.get(device=nb_device.name, name=if_name)
+    #        nb_interface_b = nb.dcim.interfaces.get(device=lldp_neighbor['hostname'].split('.')[0], name=lldp_neighbor['port'].split('.')[0])
+
+    #        new_connection = {
+    #                "interface_a": nb_interface_a.id,
+    #                "interface_b": nb_interface_b.id
+    #        }
+    #        nb.dcim.interface_connections.create(**new_connection)
+
+    #    except (RequestError, TypeError, AttributeError) as e:
+    #        continue
+
+
+    # Arista only
+    # Another loop to
+    #   - add LAG members
+    #   - add MTU
+    #   - fixing LLDP when switch is connected to servers sending a portID macaddress (instead of portID ifname)
+    # Definitely not optimized...
+    if nb_device.device_type.manufacturer.slug == "arista":
+        arista_connection = pyeapi.connect(host=hostname, username=username, password=password, transport="https")
+        nb_interfaces = nb.dcim.interfaces.filter(device_id=nb_device.id)
+        ifd_detail = arista_connection.execute("show interfaces | json")['result'][0]['interfaces']
+        arista_lldp_detail = arista_connection.execute("show lldp neighbors detail | json")['result'][0]['lldpNeighbors']
+
+        for if_name, if_properties in interfaces_on_device.items():
+            nb_interface = _get_interface_by_name(nb_interfaces, if_name)
+            try:
+                nb_interface.mtu = ifd_detail[if_name]['mtu']
+                #nb_interface.enabled = ifd_detail[if_name]['interfaceStatus'] == "connected"
+                nb_interface.save()
+
+                if re.match('^Port-Channel.*$', if_name):
+                    lag_detail = arista_connection.execute("show interfaces " + if_name + " | json")['result'][0]['interfaces'][if_name]['memberInterfaces']
+                    for m in lag_detail.keys():
+                        try:
+                            m_nb_interface = _get_interface_by_name(nb_interfaces, m)
+                            m_nb_interface.lag = nb_interface.id
+                            m_nb_interface.save()
+                        except Exception as e:
+                            pass
+
+                # corner case to update connections
+                # we do not do it in labuk
+                #elif not nb_interface.is_connected:
+                #    nei_name = arista_lldp_detail[if_name]['lldpNeighborInfo'][0]['systemName']
+                #    port_desc = arista_lldp_detail[if_name]['lldpNeighborInfo'][0]['neighborInterfaceInfo']['interfaceDescription']
+
+                #    nb_interface_a = nb.dcim.interfaces.get(device=nb_device.name, name=if_name)
+                #    nb_interface_b = nb.dcim.interfaces.get(device=nei_name.split('.')[0], name=port_desc)
+
+                #    new_connection = {
+                #        "interface_a": nb_interface_a.id,
+                #        "interface_b": nb_interface_b.id
+                #    }
+                #    nb.dcim.interface_connections.create(**new_connection)
+
+
+
+            except Exception as e:
+                pass
+
+
+
+    # Juniper only
+    # Another loop to
+    #   - add LAG members
+    #   - add MTU
+    #   - delete ifl that are member of LAG interfaces (example ge-0/0/0.700 when ge-0/0/0 is member of ae0 and ae0.700 exists)
+    #   - fixing LLDP on Junos (by default Junos shows portDescr instead of portID) TBD
+    # Definitely not optimized...
+    if nb_device.device_type.manufacturer.slug == "juniper":
+        juniper_connection = Device(host=hostname, user=username, passwd=password, port=830)
+        juniper_connection.open(gather_facts=False)
+        nb_interfaces = nb.dcim.interfaces.filter(device_id=nb_device.id)
+        ifd_detail = juniper_connection.rpc.get_interface_information(detail=True, dev_timeout=180)
+        # labuk:no lldp stuff
+        #lldp_detail = juniper_connection.rpc.get_interface_information(detail=True, dev_timeout=180)
+
+        for if_name, if_properties in interfaces_on_device.items():
+            try:
+                nb_interface = _get_interface_by_name(nb_interfaces, if_name)
+                if '.' not in if_name:
+                    nb_interface.mtu = ifd_detail.xpath('physical-interface[name/text()="\n' + if_name + '\n"]/mtu')[0].text
+                    #nb_interface.enabled = ifd_detail.xpath('physical-interface[name/text()="\n' + if_name + '\n"]/oper-status')[0].text == "\nup\n"
+                    nb_interface.save()
+
+                if re.match('^ae\d+$', if_name):
+                    members = ifd_detail.xpath('physical-interface[name/text()="\n' + if_name + '\n"]' \
+                                    '/logical-interface[name/text()="\n' + if_name + '.0\n" or name/text()="\n' + if_name + '.32767\n"]' \
+                                    '/lag-traffic-statistics/lag-link/name/text()')
+
+                    for m in members:
+                        r = re.search('^\n(.*)\.\d+\n$', m)
+                        m_sanitized = r.group(1)
+
+                        m_nb_interface = _get_interface_by_name(nb_interfaces, m_sanitized)
+                        m_nb_interface.lag = nb_interface.id
+                        try:
+                            m_nb_interface.save()
+                        except:
+                            pass
+                        # Ugly but it works
+                        extra_ifs = nb.dcim.interfaces.filter(device_id=nb_device.id)
+                        for e in extra_ifs:
+                            if re.match('^'+m_sanitized+'\.\d+$', e.name):
+                                try:
+                                    e.delete()
+                                except:
+                                    pass
+            except Exception as e:
+                pass
+        juniper_connection.close()
+
+
+
+    # if the user is working with this module in only check mode we do not
+    # want to make any changes to the environment, just return the current
+    # state with no modifications
+    if module.check_mode:
+        module.exit_json(**result)
+
+
+
+    # in the event of a successful module execution, you will want to
+    # simple AnsibleModule.exit_json(), passing the key/value results
+    module.exit_json(**result)
+
+
+
+
+
+def main():
+    run_module()
+
+if __name__ == '__main__':
+    main()

@@ -21,7 +21,7 @@ groups {
                 {{ name_server }};
 {% endfor %}
             }
-            authentication-order [ password radius ];
+            authentication-order [ radius password ];
             radius-server {
 {% for radius_server in radius_servers %}
                 {{ radius_server }} {
@@ -33,7 +33,7 @@ groups {
             }
             login {
 {% if version | regex_replace('^(\d+)\..$', '\\1') | int >= 15 %}
-                idle-timeout 10;
+                idle-timeout 60;
 {% endif %}
 {% if banner is defined %}
                 message "{{ banner | replace('\\', '\\\\') | replace('\n', '\\n') | replace('\'', '\\\'') }}";
@@ -103,7 +103,12 @@ groups {
         snmp {
             location "{{ location }}";
             contact "{{ snmp.contact }}";
+            client-list labuk {
+                10.35.0.0/16;
+            }
+{% if 'vlan' not in management.interface and 'vme' not in management.interface %}
             interface "{{ management.interface }}";
+{% endif %}
 {% if snmp.ro_communities is defined %}
   {% for c in snmp.ro_communities %}
             community {{ c }} {

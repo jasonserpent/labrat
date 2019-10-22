@@ -1,8 +1,8 @@
 ---
 
-- name: Configure Lab test devices with default configurations
+- name: Install management configuration
   hosts:
-    #    - infrastructure-network
+    - infrastructure-network
     - test-switch
     - test-router
     - test-firewall

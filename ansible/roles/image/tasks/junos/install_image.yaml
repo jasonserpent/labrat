@@ -12,7 +12,7 @@
     vmhost: "{{ vmhost | default(false) }}"
     reboot: true
     logdir: "{{ conf_dir }}"     # does not work if module crashes
-    reboot_pause: 30   # The amount of time, in seconds, to wait after the reboot is issued before the module returns.
+    reboot_pause: 60   # The amount of time, in seconds, to wait after the reboot is issued before the module returns.
                        # This gives time for the reboot to begin.
                        # Keep it at least 10
   register: response
@@ -33,7 +33,7 @@
   wait_for:
     host: "{{ ansible_host }}"
     port: 22
-    delay: 1                               # Number of seconds to wait before starting to poll.
+    delay: 60                              # Number of seconds to wait before starting to poll.
     connect_timeout: 5                     # Maximum number of seconds to wait for a connection to happen before closing and retrying.
     sleep: 5                               # Number of seconds to sleep between checks.
     timeout: "{{ reboot_timeout }}"        # Maximum number of seconds to wait for, when used with another condition it will force an error.

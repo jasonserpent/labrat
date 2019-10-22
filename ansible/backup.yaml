@@ -1,6 +1,6 @@
 ---
 
-- name: Save current running configuration of network device using NAPALM
+- name: Save current running configuration
   hosts:
     - all
   connection: local

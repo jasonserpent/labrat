@@ -4,6 +4,7 @@ hostname {{ inventory_hostname }}
 !
 ip domain-list {{ domain_name }}
 ip domain lookup vrf {{ mgmt_vrf }} source-interface {{ management.interface }}
+no ip name-server
 {% for name_server in name_servers %}
 ip name-server vrf {{ mgmt_vrf }} {{ name_server }}
 {% endfor %}
@@ -65,6 +66,7 @@ spanning-tree mode rapid-pvst
 enable secret sha512 {{ enable_secret }}
 {% endif %}
 username admin privilege 15 role network-admin secret sha512 {{ local_admin_password.eos }}
+username cvpadmin privilege 15 role network-admin secret sha512 $6$B3o0Go0OlUV9OSyQ$bhYoB8NPtFKz5OQ6jzTq83iW4GeeLM.wRk/ORDHrRoeY1Hm4u0iCRWqFOEXnS0SaaEUFeaO5GzBaKF0V9pYPi/
 username {{ local_admin_user }} privilege 15 role network-admin secret sha512 {{ local_admin_password.eos }}
 {% if redundancy is defined | default(False) %}
 !

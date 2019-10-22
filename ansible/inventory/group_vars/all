@@ -6,6 +6,8 @@ ansible_python_interpreter: .direnv/python-3.7.2+/bin/python
 timeout: 180
 
 
+netbox_url: http://netbox.lon.eplus.lab/
+netbox_token: b555a0f3d44d53de79dbc968ba2903cdd9e29e45
 
 local_admin_user: igx
 local_admin_password:
