@@ -10,8 +10,7 @@ ip name-server vrf {{ mgmt_vrf }} {{ name_server }}
 {% endfor %}
 !
 {% if mgmt_vrf != 'default' %}
-vrf definition {{ mgmt_vrf }}
-   rd 65535:1
+vrf instance {{ mgmt_vrf }}
 !
 no ip routing vrf {{ mgmt_vrf }}
 !
@@ -26,7 +25,7 @@ logging on
 !
 no radius-server host
 {% for radius_server in radius_servers %}
-radius-server host {{ radius_server }} vrf {{ mgmt_vrf }} key 7 {{ radius_key.eos }}
+radius-server host {{ radius_server }} vrf {{ mgmt_vrf }} key 7 {{ radius_key }}
 {% endfor %}
 no ip radius source-interface {{ management.interface }}
 ip radius vrf {{ mgmt_vrf }} source-interface {{ management.interface }}
@@ -65,9 +64,9 @@ spanning-tree mode rapid-pvst
 !
 enable secret sha512 {{ enable_secret }}
 {% endif %}
-username admin privilege 15 role network-admin secret sha512 {{ local_admin_password.eos }}
+username admin privilege 15 role network-admin secret sha512 {{ local_admin_password }}
 username cvpadmin privilege 15 role network-admin secret sha512 $6$B3o0Go0OlUV9OSyQ$bhYoB8NPtFKz5OQ6jzTq83iW4GeeLM.wRk/ORDHrRoeY1Hm4u0iCRWqFOEXnS0SaaEUFeaO5GzBaKF0V9pYPi/
-username {{ local_admin_user }} privilege 15 role network-admin secret sha512 {{ local_admin_password.eos }}
+username {{ local_admin_user }} privilege 15 role network-admin secret sha512 {{ local_admin_password }}
 {% if redundancy is defined | default(False) %}
 !
 redundancy
@@ -85,7 +84,7 @@ ip route vrf {{ static_route.vrf | default('default') }} {{ static_route.subnet 
 !
 interface {{ management.interface }}
    description Management
-   vrf forwarding {{ mgmt_vrf }}
+   vrf {{ mgmt_vrf }}
    ip address {{ management_address }}
 {% for secondary_address in management.secondary_addresses | default([]) %}
    ip address {{ secondary_address }} secondary
@@ -95,7 +94,7 @@ interface {{ management.interface }}
 !
 interface {{ additional_interface.name }}
    description Management
-   vrf forwarding {{ mgmt_vrf }}
+   vrf {{ mgmt_vrf }}
    ip address {{ additional_interface.address }}
 {% endfor %}
 {% endif %}

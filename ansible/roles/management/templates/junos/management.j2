@@ -13,7 +13,7 @@ groups {
 {% endif %}
             time-zone {{ timezone }};
             root-authentication {
-                encrypted-password "{{ local_admin_password.junos }}";
+                encrypted-password "{{ root_password }}";
             }
             domain-search {{ domain_name }};
             name-server {
@@ -27,7 +27,7 @@ groups {
                 {{ radius_server }} {
                     port 1812;
                     accounting-port 1813;
-                    secret "{{ radius_key.junos }}";
+                    secret "{{ radius_key }}";
                 }
 {% endfor %}
             }
@@ -45,7 +45,7 @@ groups {
                     uid 2000;
                     class super-user;
                     authentication {
-                        encrypted-password "{{ local_admin_password.junos }}";
+                        encrypted-password "{{ local_admin_password }}";
                     }
                 }
                 user remote {

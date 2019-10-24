@@ -1,2 +1,0 @@
----
-management_gateway: "{{  management_address | ipaddr('-2') | ipaddr('address') }}"

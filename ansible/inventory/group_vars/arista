@@ -1,11 +1,6 @@
 ---
 
 ansible_network_os: eos
-napalm_transport: eapi
-
-management:
-  interface: Management1
-  vrf_lite: MANAGEMENT
 
 eos_provider:
   host: "{{ ansible_host }}"

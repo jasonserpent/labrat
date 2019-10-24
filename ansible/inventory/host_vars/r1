@@ -1,6 +1,0 @@
----
-management:
-  interface: fe-0/0/0
-
-timeout: 180
-firewall: flow

@@ -20,7 +20,7 @@ import pynetbox
 
 NETBOX_URL = 'http://netbox.lon.eplus.lab/'
 MANUFACTURERS = ['arista', 'cisco', 'juniper']
-DEVICE_ROLES = ['test-switch', 'test-router', 'infrastructure-network', 'test-firewall']
+DEVICE_ROLES = ['testswitch', 'testrouter', 'infrastructurenetwork', 'testfirewall']
 
 
 

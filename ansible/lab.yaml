@@ -2,10 +2,10 @@
 
 - name: Install management configuration
   hosts:
-    - infrastructure-network
-    - test-switch
-    - test-router
-    - test-firewall
+    - infrastructurenetwork
+    - testswitch
+    - testrouter
+    - testfirewall
   roles:
     - Juniper.junos
   connection: local
