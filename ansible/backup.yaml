@@ -1,11 +1,23 @@
 ---
-
-- name: Save current running configuration
+# Pedro Antunes
+# pedro.antunes@eplus.com
+# ------------------------------------------------------------#
+- name: Backup
   hosts:
     - all
   connection: local
   gather_facts: no
-
+  environment:
+    PYTHONHTTPSVERIFY: 0
+  vars:
+    config_file: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
   tasks:
-    - include_role:
-        name: backup
+    - name: Backup running configuration
+      backup:
+        dev_os : "{{ ansible_network_os }}"
+        model : "{{ ansible_network_os }}"
+        hostname: "{{ ansible_host }}"
+        username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
+        password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+        config_file: "{{ config_file }}"
+      diff: true

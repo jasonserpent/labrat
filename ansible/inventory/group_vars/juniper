@@ -1,6 +1,7 @@
 ---
 
 ansible_network_os: junos
+ansible_port: 22
 
 junos_provider:
   host: "{{ ansible_host }}"

@@ -2,6 +2,8 @@
 
 ansible_network_os: eos
 
+ansible_port: 443
+
 eos_provider:
   host: "{{ ansible_host }}"
   username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
