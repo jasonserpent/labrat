@@ -1,0 +1,25 @@
+!
+{% if napalm_model != "vEOS" %}
+{# vlan 1 #}
+{#    state suspended #}
+{# ! #}
+{% endif %}
+!
+management ssh
+   cipher aes256-cbc aes128-cbc
+   key-exchange curve25519-sha256@libssh.org ecdh-sha2-nistp521 ecdh-sha2-nistp256 ecdh-sha2-nistp384
+   mac hmac-sha2-512-etm@openssh.com hmac-sha2-256-etm@openssh.com hmac-sha2-512 hmac-sha2-256
+   hostkey server ecdsa-nistp521 ecdsa-nistp256 ed25519 rsa
+   log-level verbose
+   idle-timeout 10
+!
+management console
+  idle-timeout 300
+!
+management defaults
+   secret hash sha512
+!
+! management security
+!   ssl profile client
+!      tls versions 1.2
+!

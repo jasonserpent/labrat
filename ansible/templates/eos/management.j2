@@ -1,0 +1,140 @@
+!
+!
+lldp management-address {{ management.interface }}
+lldp management-address vrf {{ management.vrf }}
+!
+logging console emergencies
+{% for syslog_server in syslog_servers | default([]) %}
+logging vrf {{ management.vrf }} host {{ syslog_server }} 514
+{% endfor %}
+logging vrf {{ management.vrf }} source-interface {{ management.interface }}
+!
+logging level all {{ logging_level|default('debugging') }}
+logging format hostname fqdn
+!
+hostname {{ inventory_hostname }}
+ip domain lookup vrf {{ management.vrf }} source-interface {{ management.interface }}
+{% for dns_server in dns_servers | default([]) %}
+ip name-server vrf {{ management.vrf }} {{ dns_server }}
+{% endfor %}
+dns domain {{ dns_domain }}
+!
+ntp local-interface vrf {{ management.vrf }} {{ management.interface }}
+{% for ntp_server in ntp_servers | default([]) %}
+ntp server vrf {{ management.vrf }} {{ ntp_server }}
+{% endfor %}
+!
+snmp-server chassis-id {{ inventory_hostname }}
+snmp-server contact {{ snmpv2c.contact }}
+snmp-server location {{ location }}
+snmp-server vrf {{ management.vrf }} local-interface {{ management.interface }}
+snmp-server view all .1 included
+snmp-server community {{ snmpv2c.ro_community }} ro
+{% for trap_server in snmpv2c.trap_servers|default([]) %}
+snmp-server host {{ trap_server }} vrf {{ management.vrf }} traps version 2c {{ snmpv2c.ro_community }}
+{% endfor %}
+
+default snmp-server engineID local
+snmp-server enable traps
+
+{% if management.vrf == "default" %}
+snmp-server vrf default
+{% else %}
+no snmp-server vrf default
+snmp-server vrf {{ management.vrf }}
+{% endif %}
+!
+{% for radius_server in radius_servers | default([]) %}
+radius-server host {{ radius_server }} vrf {{ management.vrf }} key {{ radius_key }}
+{% endfor %}
+ip radius vrf {{ management.vrf }} source-interface {{ management.interface }}
+!
+aaa authentication login default {{ authentication_methods|default('group radius') }}
+aaa authorization exec default {{ authentication_methods|default('group radius') }}
+aaa authorization commands all default {{ authentication_methods|default('group radius') }}
+!
+no aaa root
+aaa authorization policy local default-role read-only
+!
+{% for user in local_users %}
+username {{ user.name }} privilege {{ user.privilege }} role {{ user.role }} secret {{ user.password }}
+  {% for ssh_pubkey in user.ssh_pubkeys | default([]) %}
+username {{ user.name }} ssh-key {{ ssh_pubkey }}
+  {% endfor %}
+{% endfor %}
+!
+!
+clock timezone {{ timezone }}
+!
+{% if management.vrf != "default" %}
+vrf instance {{ management.vrf }}
+{% endif %}
+!
+{% if management.gateway is defined %}
+ip route vrf {{ management.vrf }} {{ management.network|default("0.0.0.0/0") }} {{ management.gateway }}
+{% endif %}
+!
+interface {{ management.interface }}
+   description Management
+   no shutdown
+   vrf {{ management.vrf }}
+   {% if management.interface_dhcp|default(False) %}
+   ip address dhcp
+   dhcp client accept default-route
+   {% else %}
+   ip address {{ lookup('dig', ansible_host) }}/24
+   {% endif %}
+!
+!
+no ip routing
+!
+!
+management accounts
+  session default-limit {{ max_users_sessions|default(5) }}
+!
+{% if management.vrf == "default" %}
+ip ssh client local-interface {{ management.interface }} vrf {{ management.vrf }}
+management api http-commands
+   no shutdown
+   !
+   vrf {{ management.vrf }}
+      no shutdown
+!
+management ssh
+   no shutdown
+   idle-timeout 10
+   connection limit 10
+!
+{% else %}
+ip ssh client local-interface {{ management.interface }} vrf {{ management.vrf }}
+management api http-commands
+   no shutdown
+   !
+   vrf {{ management.vrf }}
+     no shutdown
+   !
+   vrf default
+      no shutdown
+!
+management ssh
+   no shutdown
+   idle-timeout 10
+   connection limit 10
+   !
+   vrf {{ management.vrf }}
+      no shutdown
+!
+{% endif %}
+!
+banner login
+{{ banner }}
+EOF
+!
+banner motd
+{{ motd }}
+EOF
+!
+
+
+
+

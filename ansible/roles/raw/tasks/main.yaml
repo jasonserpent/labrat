@@ -1,8 +1,0 @@
----
-
-- name: Additional raw commands
-  template:
-    src: "raw.j2"
-    dest: "{{ conf_dir}}/90_raw.conf"
-  check_mode: no
-  changed_when: false

@@ -1,0 +1,63 @@
+---
+
+# Pedro Antunes
+# pedro.antunes@eplus.com
+# ------------------------------------------------------------#
+
+- name: Configure
+  hosts:
+    - infrastructurenetwork
+    - testswitch
+    - testrouter
+    - testfirewall
+  connection: local
+  gather_facts: no
+  environment:
+    PYTHONHTTPSVERIFY: 0
+  roles:
+    - juniper.junos
+  tasks:
+    - name: Gather facts
+      napalm_get_facts:
+        filter: facts
+        provider:
+          dev_os: "{{ ansible_network_os }}"
+          hostname: "{{ ansible_host }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+          transport: "https"
+          optional_args:
+            port: "{{ ansible_port | default(443) }}"
+
+    - name: Gather Junos facts
+      juniper_junos_facts:
+        provider: 
+          host: "{{ ansible_host }}"
+          user: "{{ ansible_user }}"
+          passwd: "{{ ansible_password }}"
+
+      connection: local
+      tags: always
+      when: 
+        - ansible_network_os == "junos"
+ 
+    - name: Generate configuration
+      template:
+        src: "templates/{{ ansible_network_os }}/lonlab.j2"
+        dest: ".generated_config/{{ inventory_hostname }}.{{ ansible_network_os }}"
+      check_mode: false
+      changed_when: false
+      tags: generate_only
+
+    - name: Install configuration
+      config:
+        dev_os : "{{ ansible_network_os }}"
+        model : "{{ model }}"
+        hostname: "{{ ansible_host }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        port: "{{ ansible_port | default(443) }}"
+        config_file: ".generated_config/{{ inventory_hostname }}.{{ ansible_network_os }}"
+        banner: "{{ banner }}"
+        motd: "{{ motd }}"
+      diff: true

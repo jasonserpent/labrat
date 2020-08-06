@@ -17,7 +17,7 @@
         dev_os : "{{ ansible_network_os }}"
         model : "{{ ansible_network_os }}"
         hostname: "{{ ansible_host }}"
-        username: "{{ lookup('env', 'ANSIBLE_NET_USERNAME') | default(lookup('env', 'USER'), true) }}"
-        password: "{{ lookup('env', 'ANSIBLE_NET_PASSWORD') | default(omit) }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
         config_file: "{{ config_file }}"
       diff: true

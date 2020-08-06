@@ -2,54 +2,24 @@
 
 - name: Configure network devices
   hosts:
-    - test-switch
-    - test-router
-    - test-firewall
+    - testswitch
+    - testrouter
+    - testfirewall
   connection: local
   gather_facts: no
+  vars:
+    config_file: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
 
   tasks:
 
-    - name: Install new configuration
-      napalm_install_config:
-        provider: "{{ napalm_provider }}"
-        archive_file: "/tmp/old_{{ inventory_hostname }}.{{ ansible_network_os }}"
-        config_file: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
-        commit_changes: true
-        replace_config: true
-        get_diffs: false
-      register: output
-
-#    - debug:
-#        var: output
-
-    - name: Check mode - Show diffs with candidate configuration
-      copy:
-        src: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
-        dest: "/tmp/old_{{ inventory_hostname }}.{{ ansible_network_os }}"
+    - name: Push config
+      config:
+        dev_os : "{{ ansible_network_os }}"
+        model : "{{ ansible_network_os }}"
+        hostname: "{{ ansible_host }}"
+        username: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        config_file: "{{ config_file }}"
+        banner: "{{ banner }}"
+        motd: "{{ motd }}"
       diff: true
-      when: ansible_check_mode
-
-    - name: Get new well-formatted configuration
-      napalm_get_facts:
-        provider: "{{ napalm_provider }}"
-        filter: ['config']
-      register: facts_new_config
-      diff: false
-      changed_when: false
-      when: not ansible_check_mode
-
-    - name: Save new well-formatted configuration
-      copy:
-        content: "{{ facts_new_config.ansible_facts.napalm_config.running }}"
-        dest: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
-      diff: false
-      when: not ansible_check_mode
-
-    - name: Show diffs of previous commit
-      copy:
-        src: "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
-        dest: "/tmp/old_{{ inventory_hostname }}.{{ ansible_network_os }}"
-      diff: true
-      when: output.changed and not ansible_check_mode
-

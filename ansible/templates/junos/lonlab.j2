@@ -1,0 +1,5 @@
+{% if model ~ 'MX' %}
+{% include 'management_vrf.j2' %}
+{% else %}
+{% include 'management.j2' %}
+{% endif %}

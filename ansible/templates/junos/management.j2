@@ -1,0 +1,170 @@
+{% if version is defined and version != '' %}
+version {{ version }}
+{% endif %}
+apply-groups mgmt;
+groups {
+    mgmt {
+        system {
+            host-name {{ inventory_hostname_short }};
+            domain-name {{ dns_domain }};
+{% if management_gateway is defined %}
+            backup-router {{ management_gateway }} destination {{ management_subnet | default('0.0.0.0/0') }};
+{% endif %}
+            time-zone {{ timezone }};
+            root-authentication {
+                encrypted-password "{{ root_password }}";
+            }
+            domain-search {{ dns_domain }};
+            name-server {
+{% for dns_server in dns_servers %}
+                {{ dns_server }};
+{% endfor %}
+            }
+            authentication-order [ radius password ];
+            radius-server {
+{% for radius_server in radius_servers %}
+                {{ radius_server }} {
+                    port 1812;
+                    accounting-port 1813;
+                    secret "{{ radius_key }}";
+                }
+{% endfor %}
+            }
+            login {
+{% if version | regex_replace('^(\d+)\..$', '\\1') | int >= 15 %}
+                idle-timeout 60;
+{% endif %}
+{% if banner is defined %}
+                message "{{ banner | replace('\\', '\\\\') | replace('\n', '\\n') | replace('\'', '\\\'') }}";
+{% endif %}
+{% if motd is defined %}
+                announcement "{{ motd | replace('\\', '\\\\') | replace('\n', '\\n') | replace('\'', '\\\'') }}";
+{% endif %}
+                user {{ local_admin_user }} {
+                    uid 2000;
+                    class super-user;
+                    authentication {
+                        encrypted-password "{{ local_admin_password }}";
+                    }
+                }
+                user remote {
+                    uid 2001;
+                    class super-user;
+                }
+            }
+            services {
+                ssh {
+                    root-login deny;
+                }
+                netconf {
+                    ssh;
+                }
+            }
+            archival {
+                configuration {
+                    transfer-on-commit;
+                    archive-sites {
+                        ftp://viper.lon.eplus.lab:/Archive/{{ inventory_hostname_short }};
+                    }
+                }
+            }
+            syslog {
+                user * {
+                    any emergency;
+                }
+                file messages {
+                    any notice;
+                    authorization info;
+                }
+                file interactive-commands {
+                    interactive-commands any;
+                }
+{% for syslog_server in syslog_servers %}
+                host {{ syslog_server }} {
+                    any any;
+                }
+{% endfor %}
+            }
+{% if junos.has_2RE or junos.vc_mode == 'Enabled' %}
+            commit synchronize;
+{% endif %}
+            ntp {
+{% for ntp_server in ntp_servers -%}
+  {% if loop.index == 1 %}
+                server {{ ntp_server }} prefer;
+                boot-server {{ ntp_server }};
+  {% else %}
+                server {{ ntp_server }}
+  {% endif %}
+{% endfor %}
+            }
+        }
+        snmp {
+            location "{{ location }}";
+            contact "{{ snmpv2c.contact }}";
+            client-list labuk {
+                10.35.0.0/16;
+            }
+{% if 'vlan' not in management.interface and 'vme' not in management.interface %}
+            interface {{ management.interface }};
+{% endif %}
+            community {{ snmpv2c.ro_community }} {
+                authorization read-only;
+            }
+{% for trap_server in snmpv2c.trap_servers %}
+            trap-group TRAPS {
+                targets {
+                    {{ trap_server }};
+                }
+            }
+{% endfor %}
+        }
+{% if management_gateway is defined %}
+        routing-options {
+            static {
+                /* Management */
+                route {{ management_subnet | default('0.0.0.0/0') }} {
+                    next-hop {{ management_gateway }};
+                    no-readvertise;
+                }
+            }
+        }
+{% endif %}
+        protocols {
+            lldp {
+                interface all;
+                management-address {{ management_address | ipaddr('address') }};
+{% if version | regex_replace('^(\d+)\..+$', '\\1') | int >= 13 %}
+                port-id-subtype interface-name;
+                port-description-type interface-alias;
+  {% if version | regex_replace('^(\d+)\..+$', '\\1') | int >= 17 %}
+                neighbour-port-info-display port-id;
+  {% endif %}
+{% endif %}
+            }
+        }
+        interfaces {
+            {{ management.interface | regex_replace('^([^\.]+)(\.(.*))?$', '\\1') }} {
+                description "Management";
+                unit {{ management.interface | regex_replace('^[^\.]+\.(.*)$', '\\1') | default('0') | int }} {
+                    family inet {
+                        address {{ management_address }} {
+                            primary;
+                            preferred;
+                        }
+{% for secondary_address in management.secondary_addresses | default([]) %}
+                       address {{ secondary_address }};
+{% endfor %}
+                    }
+                }
+            }
+        }
+    }
+}
+{% for static_route in static_routes | default([]) %}
+routing-options {
+    static {
+        route {{ static_route.subnet }} next-hop {{ static_route.gateway }};
+    }
+}
+{% endfor %}

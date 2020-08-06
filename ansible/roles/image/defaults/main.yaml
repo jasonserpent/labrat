@@ -1,5 +1,0 @@
----
-delete_current_images: False
-delay_poll_after_reboot: 180
-reboot_timeout: 1800
-

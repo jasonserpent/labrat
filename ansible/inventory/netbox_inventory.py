@@ -27,7 +27,8 @@ DEVICE_ROLES = ['testswitch', 'testrouter', 'infrastructurenetwork', 'testfirewa
 #INVENTORY_PATH = '/home/pedro/Eplus/labuk/ansible/inventory/'
 INVENTORY_PATH = './inventory/'
 
-nb = pynetbox.api(NETBOX_URL)
+#nb = pynetbox.api(NETBOX_URL)
+nb = pynetbox.api(NETBOX_URL, token='b555a0f3d44d53de79dbc968ba2903cdd9e29e45')
 
 def _fetch_nb_endpoints(**kwargs):
     global manufacturers
@@ -163,6 +164,7 @@ def _read_yaml_host_vars():
 
 def _read_yaml_group_vars():
     global all_vars
+    global local_vars
     global manufacturer_vars
     global site_vars
     global role_vars
@@ -173,12 +175,14 @@ def _read_yaml_group_vars():
     global devices
 
     all_vars = {}
+    local_vars = {}
     manufacturer_vars = {}
     site_vars = {}
     role_vars = {}
 
     # Read all variables
     all_vars = _load_yaml_vars('group_vars/all')
+    local_vars = _load_yaml_vars('group_vars/local_vars')
 
     # Read manufacturer-specific variables
     for manufacturer in manufacturers:
@@ -243,6 +247,11 @@ def get_inventory_list():
     inventory['all']['children'] = list(map(lambda x: x.slug, manufacturers + sites + roles))
     inventory['all']['hosts'] = list(map(lambda x: x.name, devices))
     inventory['all']['vars'] = all_vars
+
+    inventory['local_vars'] = {}
+    inventory['local_vars']['children'] = list(map(lambda x: x.slug, manufacturers + sites + roles))
+    inventory['local_vars']['hosts'] = list(map(lambda x: x.name, devices))
+    inventory['local_vars']['vars'] = all_vars
 
     # Return 'ungrouped' which will be empty
     inventory['ungrouped'] = {}

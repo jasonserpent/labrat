@@ -1,5 +1,0 @@
-- name: Gather EOS facts
-  eos_facts:
-    provider: "{{ eos_provider }}"
-    gather_subset: "!config"
-  tags: always

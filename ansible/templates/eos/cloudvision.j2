@@ -1,0 +1,10 @@
+
+
+
+{% if cvp is defined %}
+!
+daemon TerminAttr
+  exec /usr/bin/TerminAttr -ingestgrpcurl={{ cvp.addresses|map('regex_replace', '^(.*)$', '\\1:9910')|list|join("/") }} -cvcompression=gzip -ingestauth=key,{{ cvp.key }} -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf={{ management.vrf }} -taillogs -cvsourceip={{ lookup('dig', ansible_host) }}
+   no shutdown
+!
+{% endif %}
