@@ -36,6 +36,7 @@ nb = pynetbox.api(NETBOX_URL, token='sometokengeneratedonnetbox1234567890')
 
 ## Group vars
 Edit or create `inventory/group_vars/local_vars`
+Add your own credentials when connecting to network devices.
 ```yaml
 ---
 ansible_python_interpreter: /path/to/bin/python3
