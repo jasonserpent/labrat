@@ -1,4 +1,4 @@
-ansible==2.8.6
+ansible==2.9.11
 astroid==2.3.3
 bcrypt==3.1.7
 certifi==2019.9.11
@@ -26,7 +26,7 @@ netmiko==3.1.1
 nxapi-plumbing==0.5.2
 paramiko==2.6.0
 passlib==1.7.1
-pkg-resources==0.0.0
+#pkg-resources==0.0.0
 pycparser==2.19
 pyeapi==0.8.2
 pyIOSXR==0.53
