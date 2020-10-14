@@ -28,7 +28,7 @@ DEVICE_ROLES = ['testswitch', 'testrouter', 'infrastructurenetwork', 'testfirewa
 INVENTORY_PATH = './inventory/'
 
 #nb = pynetbox.api(NETBOX_URL)
-nb = pynetbox.api(NETBOX_URL, token='b555a0f3d44d53de79dbc968ba2903cdd9e29e45')
+nb = pynetbox.api(NETBOX_URL, token='c3f4d0537e55a4d44b760332c79703a9dd7dc422')
 
 def _fetch_nb_endpoints(**kwargs):
     global manufacturers
