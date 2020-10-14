@@ -73,9 +73,9 @@ ansible_password: somesecretpassword
 # Usage
 
 ## Test validation of build
-'''
+```
 $ ansible-inventory -i inventory/netbox_inventory.py --list
-'''
+```
 
 ## Commands
 Backup config to 'configs' directory
