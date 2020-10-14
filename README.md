@@ -71,6 +71,14 @@ ansible_user: someusername
 ansible_password: somesecretpassword
 ```
 # Usage
+
+## Test validation of build
+'''
+$ ansible-inventory -i inventory/netbox_inventory.py --list
+'''
+
+## Commands
+Backup config to 'configs' directory
 ```
 $ cd ansible
 $ ansible-playbook backup.yaml
