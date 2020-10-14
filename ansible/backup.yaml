@@ -10,7 +10,7 @@
   environment:
     PYTHONHTTPSVERIFY: 0
   vars:
-    config_file: "configs/{{ scenario }}/{{ model }}/{{ inventory_hostname }}.{{ ansible_network_os }}"
+    config_file:  "configs/{{ inventory_hostname }}.{{ ansible_network_os }}"
   tasks:
     - name: Backup running configuration
       backup:
