@@ -11,6 +11,32 @@
 
 <!-- vim-markdown-toc -->
 
+# Intro
+A working project to improve inhouse Lab work
+The aim is to provide a multivendor platform to ease of backing up, pushing configs during labwork.
+The tool is working by using the inhouse Netbox for SoT, Napalm-ansible for multivendor 
+# Features
+
+## Current
+* Integration with Netbox for dynamic inventory handling
+* Backup configuration, to standard dir or specified
+* Push config, from Standard dir or specific
+## Future
+
+## Wishlist
+* Pipeline to:
+** Include validation prior to config push
+** Validate state post-push 
+
+# To-do-list
+* Update syntax documention for current features including usefull options
+** Backup
+** Config push
+** Netbox groups
+
+* Update code documentation
+* Build installation buide for Netbox
+* Package full installation in to docker container(s)
 
 # Installation
 ```
