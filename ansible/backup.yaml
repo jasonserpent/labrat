@@ -16,7 +16,8 @@
     - name: Backup running configuration
       backup:
         dev_os : "{{ ansible_network_os }}"
-        model : "{{ ansible_network_os }}"
+        model : "{{ model }}"
+        model : "{{ model }}"
         hostname: "{{ ansible_host }}"
         username: "{{ ansible_user }}"
         password: "{{ ansible_password }}"
