@@ -78,8 +78,7 @@ $ ansible-inventory -i inventory/netbox_inventory.py --list
 ```
 
 ## Commands
-Backup config to 'configs' directory
-Specific directories can be added by using the -e flag 
+Backup config to 'configs' directorySpecific directories can be added by using the -e flag 
 
 ```
 $ ansible-playbook backup.yaml -e scenario=Projectdirectory
